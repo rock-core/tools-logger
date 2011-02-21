@@ -39,6 +39,12 @@
 #include <typelib/registry.hh>
 #include <typelib/pluginmanager.hh>
 
+#include <boost/format.hpp>
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+
 using namespace std;
 using boost::mutex;
 namespace endian = utilmm::endian;
@@ -47,7 +53,7 @@ BOOST_STATIC_ASSERT(( sizeof(Logging::Prologue) == 16 ));
 
 const char Logging::FORMAT_MAGIC[] = "POCOSIM";
 
-void Logging::writePrologue(std::ostream& stream)
+void Logging::writePrologue( File& file )
 {
     Prologue prologue;
     prologue.version    = endian::to_little<uint32_t>(Logging::FORMAT_VERSION);
@@ -57,17 +63,45 @@ void Logging::writePrologue(std::ostream& stream)
     prologue.flags = 0;
 #endif
 
-    stream.write(reinterpret_cast<char*>(&prologue), sizeof(prologue));
+    file.write(reinterpret_cast<char*>(&prologue), sizeof(prologue));
 }
 
 
 namespace Logging
 {
-    Logfile::Logfile(std::ostream& stream)
-        : m_stream(stream)
-        , m_stream_idx(0)
+    File::File(std::string& file_name)
     {
-        writePrologue(stream);
+	m_fd = open( file_name.c_str(), 
+		O_CREAT|O_WRONLY|O_TRUNC, 
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+
+	if( m_fd == -1 )
+	{
+	    throw std::runtime_error( 
+		    boost::str( boost::format("Could not open file %s for writing. %s")
+			% file_name % strerror( errno ) ) );
+	}
+    }
+
+    File::~File()
+    {
+	if( m_fd != -1 && close( m_fd ) )
+	{
+	    perror("could not close log file.");
+	}
+    }
+
+    void File::write( const void* buf, int len )
+    {
+	posix_fadvise( m_fd, 0, 0, POSIX_FADV_DONTNEED );
+	::write( m_fd, buf, len );
+    }
+
+
+    Logfile::Logfile(std::string& file_name)
+        : m_file( file_name ), m_stream_idx(0)
+    {
+        writePrologue( m_file );
     }
 
     int Logfile::newStreamIndex()
@@ -101,12 +135,8 @@ namespace Logging
     void Logfile::writeSample(int stream_index, base::Time const& realtime, base::Time const& logical, void* payload_data, size_t payload_size)
     {
         writeSampleHeader(stream_index, realtime, logical, payload_size);
-        m_stream.write(reinterpret_cast<const char*>(payload_data), payload_size);
+        m_file.write(reinterpret_cast<const char*>(payload_data), payload_size);
     }
-
-    std::ostream& Logfile::getStream() { return m_stream; }
-
-
 
 
 
@@ -147,9 +177,6 @@ namespace Logging
         m_file.writeStreamDeclaration(m_stream_idx, DataStreamType, m_name, m_type_name, m_type_def);
     }
 
-    std::ostream& StreamLogger::getStream()
-    { return m_file.getStream(); }
-
     bool StreamLogger::writeSampleHeader(const base::Time& timestamp, size_t size)
     {
         if (!m_last.isNull() && !m_sampling.isNull() && (timestamp - m_last) < m_sampling)
@@ -162,5 +189,25 @@ namespace Logging
         m_last = timestamp;
         return true;
     }
-}
 
+    bool StreamLogger::writeSample(const base::Time& timestamp, size_t size, unsigned char* data)
+    {
+        if (!m_last.isNull() && !m_sampling.isNull() && (timestamp - m_last) < m_sampling)
+            return false;
+
+        if (size == 0)
+            size = m_type_size;
+
+        m_file.writeSample(m_stream_idx, base::Time::now(), timestamp, data, size);
+        m_last = timestamp;
+        return true;
+    }
+
+    unsigned char* StreamLogger::getSampleBuffer( size_t size )
+    {
+	if( m_sample_buffer.size() < size )
+	    m_sample_buffer.resize( size );
+	return &m_sample_buffer.front();
+    }
+
+}

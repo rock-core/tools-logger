@@ -58,8 +58,7 @@ bool Logger::startHook()
 
     // The registry has been loaded on construction
     // Now, create the output file
-    auto_ptr<ofstream> io(new ofstream(_file.value().c_str()));
-    auto_ptr<Logfile>  file(new Logfile(*io));
+    auto_ptr<Logfile>  file( new Logfile(_file.value()) );
 
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
@@ -67,7 +66,6 @@ bool Logger::startHook()
                 it->name, it->type_name, *(it->registry), *file);
     }
 
-    m_io   = io.release();
     m_file = file.release();
     return true;
 }
@@ -87,8 +85,9 @@ void Logger::updateHook()
             }
 
             size_t payload_size = it->typelib_marshaller->getMarshallingSize(it->marshalling_handle);
-            it->logger->writeSampleHeader(stamp, payload_size);
-            it->typelib_marshaller->marshal(it->logger->getStream(), it->marshalling_handle);
+	    unsigned char *buf = it->logger->getSampleBuffer( payload_size );
+            it->typelib_marshaller->marshal(buf, payload_size, it->marshalling_handle);
+            it->logger->writeSample(stamp, payload_size, buf);
         }
     }
 }
@@ -100,8 +99,6 @@ void Logger::stopHook()
         delete it->logger;
         it->logger = 0;
     }
-    delete m_io;
-    m_io = 0;
     delete m_file;
     m_file = 0;
 }

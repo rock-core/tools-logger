@@ -46,12 +46,26 @@ namespace Typelib {
 }
 namespace Logging
 {
+    /** class encapsulates a file that is used for writing the log.
+     * The only operation allowed is a blocked write. 
+     */
+    class File
+    {
+	int m_fd;
+
+    public:
+	File( std::string& file_name );
+	~File();
+
+	void write( const void* buf, int len );
+    };
+
     class Logfile
     {
         template<class T> friend Logfile& operator << (Logfile& output, const T& value);
         static const size_t nstream = static_cast<size_t>(-1);
 
-        std::ostream& m_stream;
+	File m_file;
         int m_stream_idx;
 
     private:
@@ -59,14 +73,12 @@ namespace Logging
         void write(const T& data) 
         { 
 	    T little_endian = utilmm::endian::to_little(data);
-	    m_stream.write( reinterpret_cast<const char*>(&little_endian), sizeof(T) ); 
+	    m_file.write( reinterpret_cast<const char*>(&little_endian), sizeof(T) ); 
 	}
        
 
     public:
-        Logfile(std::ostream& stream);
-
-        std::ostream& getStream();
+        Logfile(std::string& file_name);
 
         int newStreamIndex();
 
@@ -82,7 +94,7 @@ namespace Logging
     }
 
     /** Writes the file prologue */
-    void writePrologue(std::ostream& stream);
+    void writePrologue(File &file);
 
     template<class T>
     Logfile& operator << (Logfile& output, const T& value)
@@ -108,7 +120,7 @@ namespace Logging
     {
         uint32_t length(value.length());
         output.write(length);
-        output.m_stream.write(reinterpret_cast<const char*>(value.c_str()), length);
+	output.m_file.write( reinterpret_cast<const char*>(value.c_str()), length);
         return output;
     }
 
@@ -168,7 +180,8 @@ namespace Logging
         base::Time m_sampling;
         base::Time m_last;
 
-        Logfile m_file;
+	std::vector<unsigned char> m_sample_buffer;
+        Logfile &m_file;
 
     public:
         /** Create a new logger, with no type definition
@@ -204,8 +217,9 @@ namespace Logging
         void setSampling(base::Time const& period);
 
         bool writeSampleHeader(const base::Time& timestamp, size_t size);
+        bool writeSample(const base::Time& timestamp, size_t size, unsigned char* data);
 
-        std::ostream& getStream();
+	unsigned char* getSampleBuffer( size_t size ); 
     };
 }
 

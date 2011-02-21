@@ -28,7 +28,6 @@ namespace logger {
     protected:
 
         Typelib::Registry* m_registry;
-        std::ofstream*     m_io;
         Logging::Logfile*  m_file;
     
         bool startHook();
