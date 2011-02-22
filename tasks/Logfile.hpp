@@ -53,11 +53,17 @@ namespace Logging
     {
 	int m_fd;
 
+        static const size_t DEFAULT_BUFFER_SIZE = 4096*1024;
+        unsigned char* buffer;
+        long buffer_size, buffer_pos;
+
+        void flush();
+
     public:
-	File( std::string& file_name );
+	File( std::string& file_name, size_t buffer_size = DEFAULT_BUFFER_SIZE );
 	~File();
 
-	void write( const void* buf, int len );
+	void write( const void* buf, long len );
     };
 
     class Logfile

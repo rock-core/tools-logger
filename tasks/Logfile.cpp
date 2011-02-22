@@ -66,10 +66,25 @@ void Logging::writePrologue( File& file )
     file.write(reinterpret_cast<char*>(&prologue), sizeof(prologue));
 }
 
-
 namespace Logging
 {
-    File::File(std::string& file_name)
+    inline void write_buffer( int fd, const void* buf, long len )
+    {
+        //sync_file_range( fd, 0, 0, SYNC_FILE_RANGE_WRITE );
+        long written = 0;
+        while( written < len )
+        {
+            long res = ::write( fd, buf, len );
+            if( res >= 0 )
+                written += res;
+
+            if( res == -1 )
+                throw std::runtime_error( strerror( errno ) ); 
+        }
+        posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+    }
+
+    File::File(std::string& file_name, size_t buffer_size)
     {
 	m_fd = open( file_name.c_str(), 
 		O_CREAT|O_WRONLY|O_TRUNC, 
@@ -81,20 +96,51 @@ namespace Logging
 		    boost::str( boost::format("Could not open file %s for writing. %s")
 			% file_name % strerror( errno ) ) );
 	}
+
+        // initialize buffer
+        buffer = new unsigned char[buffer_size];
+        this->buffer_size = buffer_size;
+        buffer_pos = 0;
     }
 
     File::~File()
     {
+        flush();
 	if( m_fd != -1 && close( m_fd ) )
 	{
 	    perror("could not close log file.");
 	}
+        delete [] buffer;
     }
 
-    void File::write( const void* buf, int len )
+    void File::flush() 
     {
-	posix_fadvise( m_fd, 0, 0, POSIX_FADV_DONTNEED );
-	::write( m_fd, buf, len );
+        // call write if there is stuff in the buffer
+        if( buffer_pos > 0 )
+        {
+            write_buffer( m_fd, buffer, buffer_pos );
+            buffer_pos = 0;
+        }
+    }
+
+    void File::write( const void* buf, long len )
+    {
+        if( len > buffer_size )
+        {
+            flush();
+            // write directly
+            write_buffer( m_fd, buf, len );
+        }
+        else
+        {
+            // see if we need to flush to fit the data
+            if( buffer_size - buffer_pos < len )
+                flush();
+
+            // copy the data into the buffer otherwise
+            memcpy( buffer + buffer_pos, buf, len );
+            buffer_pos += len;
+        }
     }
 
 
