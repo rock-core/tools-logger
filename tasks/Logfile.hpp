@@ -53,13 +53,14 @@ namespace Logging
     {
 	int m_fd;
 
-        static const size_t DEFAULT_BUFFER_SIZE = 4096*1024;
+        static const size_t DEFAULT_BUFFER_SIZE = 512*1024;
         unsigned char* buffer;
         long buffer_size, buffer_pos;
 
-        void flush();
-
     public:
+        void flush();
+	base::Time last_flush;
+
 	File( std::string& file_name, size_t buffer_size = DEFAULT_BUFFER_SIZE );
 	~File();
 
@@ -91,6 +92,8 @@ namespace Logging
         void writeStreamDeclaration(int stream_index, StreamType type, std::string const& name, std::string const& type_name, std::string const& type_def);
         void writeSampleHeader(int stream_index, base::Time const& realtime, base::Time const& logical, size_t size);
         void writeSample(int stream_index, base::Time const& realtime, base::Time const& logical, void* payload_data, size_t payload_size);
+
+	void checkFlush();
     };
 
     namespace details

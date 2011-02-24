@@ -96,6 +96,10 @@ void Logger::updateHook()
             }
         }
     }
+
+    // will flush the buffers in a regular interval to prevent data loss
+    // and potentially save fingers from freezing... again...
+    m_file->checkFlush();
 }
 
 void Logger::stopHook()

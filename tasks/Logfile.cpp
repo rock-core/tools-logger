@@ -121,6 +121,7 @@ namespace Logging
             write_buffer( m_fd, buffer, buffer_pos );
             buffer_pos = 0;
         }
+	last_flush = base::Time::now();
     }
 
     void File::write( const void* buf, long len )
@@ -182,6 +183,14 @@ namespace Logging
     {
         writeSampleHeader(stream_index, realtime, logical, payload_size);
         m_file.write(reinterpret_cast<const char*>(payload_data), payload_size);
+    }
+
+    void Logfile::checkFlush() 
+    {
+	// make sure the buffers are flushed in a regular interval
+	const base::Time interval( base::Time::fromSeconds( 1.0 ) );
+	if( (base::Time::now() - interval) > m_file.last_flush )
+	    m_file.flush();
     }
 
 
