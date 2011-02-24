@@ -74,7 +74,7 @@ namespace Logging
         long written = 0;
         while( written < len )
         {
-            long res = ::write( fd, buf, len );
+            long res = ::write( fd, reinterpret_cast<const char *>(buf) + written, len - written );
             if( res >= 0 )
                 written += res;
 
