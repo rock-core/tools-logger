@@ -81,7 +81,11 @@ namespace Logging
             if( res == -1 )
                 throw std::runtime_error( strerror( errno ) ); 
         }
-        posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED );
+        
+        if(posix_fadvise( fd, 0, 0, POSIX_FADV_DONTNEED ) < 0)
+	{
+	    throw std::runtime_error( std::string("Error setting file advice") + strerror( errno ) ); 
+	}
     }
 
     File::File(std::string& file_name, size_t buffer_size)
