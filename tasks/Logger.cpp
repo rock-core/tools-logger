@@ -73,21 +73,27 @@ bool Logger::startHook()
 void Logger::updateHook()
 {
     Time stamp = Time::now();
-    for (Reports::iterator it = root.begin(); it != root.end(); ++it)
+    bool did_something = true;
+    while(did_something)
     {
-        while (it->read_port->read(it->sample, false) == RTT::NewData)
+        did_something = false;
+        for (Reports::iterator it = root.begin(); it != root.end(); ++it)
         {
-            it->typelib_marshaller->refreshTypelibSample(it->marshalling_handle);
-            if (!it->logger)
+            if (it->read_port->read(it->sample, false) == RTT::NewData)
             {
-                it->logger = new Logging::StreamLogger(
-                        it->name, it->type_name, *m_registry, *m_file);
-            }
+                did_something = true;
+                it->typelib_marshaller->refreshTypelibSample(it->marshalling_handle);
+                if (!it->logger)
+                {
+                    it->logger = new Logging::StreamLogger(
+                            it->name, it->type_name, *m_registry, *m_file);
+                }
 
-            size_t payload_size = it->typelib_marshaller->getMarshallingSize(it->marshalling_handle);
-	    unsigned char *buf = it->logger->getSampleBuffer( payload_size );
-            it->typelib_marshaller->marshal(buf, payload_size, it->marshalling_handle);
-            it->logger->writeSample(stamp, payload_size, buf);
+                size_t payload_size = it->typelib_marshaller->getMarshallingSize(it->marshalling_handle);
+                unsigned char *buf = it->logger->getSampleBuffer( payload_size );
+                it->typelib_marshaller->marshal(buf, payload_size, it->marshalling_handle);
+                it->logger->writeSample(stamp, payload_size, buf);
+            }
         }
     }
 }
