@@ -8,6 +8,8 @@ Orocos.initialize
 
 FileUtils.rm_f "test.idx"
 
+numSamples = 5000
+
 Orocos.run 'test_logger' do
     logger = Orocos::TaskContext.get "logger"
 
@@ -32,8 +34,13 @@ Orocos.run 'test_logger' do
     logger.file = "test.log"
     logger.start
 
-    writer = logger.port('scans').writer(:type => :buffer, :size => 1)
-    10.times do
+    writer = logger.port('scans').writer(:type => :buffer, :size => 1000)
+
+    genSamples = Array.new
+    
+    puts "generating samples"
+    #generate     
+    (numSamples - 1).times do
         start_point = Integer(rand * 1000)
         step        = Integer(rand * 100)
 
@@ -43,9 +50,33 @@ Orocos.run 'test_logger' do
             sample.ranges.push(start_point + i * step)
         end
 
-        writer.write(sample)
-        sleep(0.05)
+	genSamples << sample;
+        #sleep(0.001)
     end
+    
+    puts "starting writing #{genSamples.size}"
+    
+    genSamples.each do |i|
+	writer.write(i)
+    end
+
+    #wait until timout 
+    sleep(2)
+    
+    #write last sample
+    start_point = Integer(rand * 1000)
+    step        = Integer(rand * 100)
+
+    sample = writer.new_sample
+    sample.time = Time.at(start_point, step)
+    500.times do |i|
+	sample.ranges.push(start_point + i * step)
+    end
+
+    writer.write(sample)
+    
+    sleep(0.001)
+    
     logger.stop
 
     # Should in general not do it while the module is running. OK here, as we
@@ -60,10 +91,10 @@ Orocos.run 'test_logger' do
 end
 
 # Now, read the result
-require 'simlog'
-logfile = Pocosim::Logfiles.new(File.open('test.log'))
+require 'pocolog'
+logfile = Pocolog::Logfiles.new(File.open('test.log'))
 samples = logfile.stream('scans').samples.to_a
-if samples.size != 10
+if samples.size != numSamples
     raise "wrong sample count"
 end
 
