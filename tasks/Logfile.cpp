@@ -130,24 +130,35 @@ namespace Logging
 
     void File::write( const void* buf, long len )
     {
-        if( len > buffer_size )
-        {
-            flush();
-            // write directly
-            write_buffer( m_fd, buf, len );
-        }
-        else
-        {
-            // see if we need to flush to fit the data
-            if( buffer_size - buffer_pos < len )
-                flush();
+	long copied = 0;
 
-            // copy the data into the buffer otherwise
-            memcpy( buffer + buffer_pos, buf, len );
-            buffer_pos += len;
-        }
+	while(copied < len)
+	{
+	    long left = len - copied;
+	    
+	    //fast path to avoid one memcopy
+	    if(buffer_pos == 0 && left > buffer_size)
+	    {
+		//write out whole chunk
+		write_buffer(m_fd, reinterpret_cast<const char *>(buf)+copied, buffer_size);
+		copied += buffer_size;
+		continue;
+	    }
+
+	    const long free_space = buffer_size - buffer_pos;
+	    long to_be_copied = std::min(free_space, left);	    
+
+	    memcpy(buffer + buffer_pos, reinterpret_cast<const char *>(buf) + copied, to_be_copied);
+	    copied += to_be_copied;
+	    buffer_pos += to_be_copied;
+	    
+	    assert(buffer_pos <= buffer_size && buffer_pos >= 0);
+	    
+	    //buffer is full, flush it
+	    if(buffer_pos >= buffer_size)
+		flush();
+	}
     }
-
 
     Logfile::Logfile(std::string& file_name)
         : m_file( file_name ), m_stream_idx(0)
