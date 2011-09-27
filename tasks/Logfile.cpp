@@ -73,7 +73,7 @@ namespace Logging
     int Logfile::newStreamIndex()
     { return m_stream_idx++; }
 
-    void Logfile::writeStreamDeclaration(int stream_index, StreamType type, std::string const& name, std::string const& type_name, std::string const& type_def)
+    void Logfile::writeStreamDeclaration(int stream_index, StreamType type, std::string const& name, std::string const& type_name, std::string const& type_def, std::string const& metadata)
     {
         long payload_size = 1 + 4 + name.size() + 4 + type_name.size();
         if (!type_def.empty())
@@ -85,8 +85,8 @@ namespace Logging
             << static_cast<uint8_t>(type)
             << name
             << type_name;
-        if (!type_def.empty())
-            *this << type_def;
+        *this << type_def;
+        *this << metadata;
     }
 
     void Logfile::writeSampleHeader(int stream_index, base::Time const& realtime, base::Time const& logical, size_t payload_size)
@@ -128,11 +128,12 @@ namespace Logging
         return 0;
     }
 
-    StreamLogger::StreamLogger(std::string const& name, const std::string& type_name, Typelib::Registry const& registry, Logfile& file)
+    StreamLogger::StreamLogger(std::string const& name, const std::string& type_name, Typelib::Registry const& registry, std::string const& metadata, Logfile& file)
         : m_name(name), m_type_name(type_name)
         , m_type_def(Typelib::PluginManager::save("tlb", registry))
         , m_stream_idx(file.newStreamIndex())
         , m_type_size(getTypeSize(registry, type_name))
+        , m_metadata(metadata)
         , m_file(file)
     {
         registerStream();
@@ -144,7 +145,7 @@ namespace Logging
 
     void StreamLogger::registerStream()
     {
-        m_file.writeStreamDeclaration(m_stream_idx, DataStreamType, m_name, m_type_name, m_type_def);
+        m_file.writeStreamDeclaration(m_stream_idx, DataStreamType, m_name, m_type_name, m_type_def, m_metadata);
     }
 
     std::ostream& StreamLogger::getStream()

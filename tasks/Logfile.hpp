@@ -70,7 +70,7 @@ namespace Logging
 
         int newStreamIndex();
 
-        void writeStreamDeclaration(int stream_index, StreamType type, std::string const& name, std::string const& type_name, std::string const& type_def);
+        void writeStreamDeclaration(int stream_index, StreamType type, std::string const& name, std::string const& type_name, std::string const& type_def, std::string const& metadata);
         void writeSampleHeader(int stream_index, base::Time const& realtime, base::Time const& logical, size_t size);
         void writeSample(int stream_index, base::Time const& realtime, base::Time const& logical, void* payload_data, size_t payload_size);
     };
@@ -165,6 +165,7 @@ namespace Logging
         std::string const m_type_def;
         int const m_stream_idx;
         size_t const m_type_size;
+        std::string m_metadata;
         base::Time m_sampling;
         base::Time m_last;
 
@@ -193,7 +194,7 @@ namespace Logging
          * @arg registry the Typelib registry which defines the associated type name
          * @arg stream the stream object
          */
-        StreamLogger(std::string const& name, std::string const& type_name, Typelib::Registry const& type_def, Logfile& file);
+        StreamLogger(std::string const& name, std::string const& type_name, Typelib::Registry const& type_def, std::string const& metadata, Logfile& file);
 
         /** Registers the sample stream in the output file */
         void registerStream();

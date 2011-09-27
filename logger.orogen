@@ -27,11 +27,19 @@ task_context "Logger" do
 	returns("bool").
         argument("component", "std/string", "the name of the port's component").
         argument("port", "std/string", "the name of the port that should not be reported anymore")
+
     operation("createLoggingPort").
 	returns("bool").
         argument("port_name", "std/string", "the name of the port to be created").
         argument("type_name", "std/string", "the name of the type the port should handle").
         doc("creates a port that is associated with a given log stream of the same name. Any data written to that port will be logged into that stream")
+
+    operation("addStaticMetadata").
+        returns("bool").
+        argument("port_name", "std/string", "the port name to which we should add metadata").
+        argument("key", "std/string", "the metadata key name").
+        argument("value", "std/string", "the metadata value").
+        doc("adds some metadata to a stream. This must be called before the stream gets its first sample")
 
     operation("removeLoggingPort").
 	returns("bool").
@@ -43,7 +51,7 @@ task_context "Logger" do
 end
 
 typekit do
-	export_types '/logger/Marker'
+	export_types '/logger/Marker', '/logger/Metadata'
 end
 
 task_context "LoggerTest" do

@@ -27,6 +27,7 @@ struct Logger::ReportDescription
 {
     std::string name;
     std::string type_name;
+    std::string metadata;
     Typelib::Registry* registry;
     orogen_transports::TypelibMarshallerBase* typelib_marshaller;
     orogen_transports::TypelibMarshallerBase::Handle* marshalling_handle;
@@ -64,7 +65,7 @@ bool Logger::startHook()
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
         it->logger = new Logging::StreamLogger(
-                it->name, it->type_name, *(it->registry), *file);
+                it->name, it->type_name, *(it->registry), it->metadata, *file);
     }
 
     m_io   = io.release();
@@ -83,7 +84,7 @@ void Logger::updateHook()
             if (!it->logger)
             {
                 it->logger = new Logging::StreamLogger(
-                        it->name, it->type_name, *m_registry, *m_file);
+                        it->name, it->type_name, *m_registry, it->metadata, *m_file);
             }
 
             size_t payload_size = it->typelib_marshaller->getMarshallingSize(it->marshalling_handle);
@@ -106,6 +107,23 @@ void Logger::stopHook()
     m_file = 0;
 }
 
+bool Logger::addStaticMetadata(std::string const& port_name, ::std::string const & key, ::std::string const & value)
+{
+    for (Reports::iterator it = root.begin(); it != root.end(); ++it)
+    {
+        if ( it->read_port->getName() == port_name )
+        {
+            if (it->logger)
+                return false;
+
+            if (!it->metadata.empty())
+                it->metadata += ", ";
+            it->metadata += key + ": " + value;
+            return true;
+        }
+    }
+    return false;
+}
 
 bool Logger::createLoggingPort(const std::string& portname, const std::string& typestr)
 {

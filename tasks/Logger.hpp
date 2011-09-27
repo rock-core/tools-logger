@@ -68,6 +68,8 @@ namespace logger {
 	bool createLoggingPort(const std::string &port_name, const std::string& type_name);
         bool removeLoggingPort(std::string const& stream_name);
 
+        bool addStaticMetadata(std::string const& port_name, ::std::string const & key, ::std::string const & value);
+
     private:
         typedef RTT::DataFlowInterface::Ports Ports;
 
