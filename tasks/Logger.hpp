@@ -85,8 +85,6 @@ namespace logger {
          */
         typedef std::vector<ReportDescription> Reports;
         Reports root;
-
-        void loadRegistry();
     };
 }
 

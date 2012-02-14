@@ -1,9 +1,6 @@
 #include "Logger.hpp"
 #include <typelib/registry.hh>
 #include <rtt/rtt-config.h>
-#include <utilmm/configfile/pkgconfig.hh>
-#include <utilmm/stringtools.hh>
-#include <typelib/pluginmanager.hh>
 #include <rtt/base/PortInterface.hpp>
 #include <rtt/types/Types.hpp>
 #include <rtt/typelib/TypelibMarshallerBase.hpp>
@@ -41,10 +38,7 @@ Logger::Logger(std::string const& name, TaskCore::TaskState initial_state)
     , m_registry(0)
     , m_file(0)
 {
-    loadRegistry();
-
-    // Register a fake protocol object to be able to marshal samples
-    // "the typelib way"
+    m_registry = new Typelib::Registry;
 }
 
 Logger::~Logger()
@@ -212,6 +206,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
         return false;
     }
 
+    m_registry->merge(transport->getRegistry());
     if (! m_registry->has(transport->getMarshallingType()))
     {
         log(Error) << "cannot report ports of type " << type->getTypeName() << " as I can't find a typekit Typelib registry that defines it" << endlog();
@@ -278,38 +273,5 @@ void Logger::snapshot()
     // execute the copy commands (fast).
     if( this->engine()->getActivity() )
         this->engine()->getActivity()->trigger();
-}
-
-#define TASK_LIBRARY_NAME_PATTERN_aux0(target) #target
-#define TASK_LIBRARY_NAME_PATTERN_aux(target) "-typekit-" TASK_LIBRARY_NAME_PATTERN_aux0(target)
-#define TASK_LIBRARY_NAME_PATTERN TASK_LIBRARY_NAME_PATTERN_aux(OROCOS_TARGET)
-void Logger::loadRegistry()
-{
-    string const pattern = TASK_LIBRARY_NAME_PATTERN;
-    delete m_registry;
-    m_registry = new Typelib::Registry;
-
-    // List all known toolkits and load the ones that have a .tlb file defined.
-    list<string> packages = utilmm::pkgconfig::packages();
-    for (list<string>::const_iterator it = packages.begin(); it != packages.end(); ++it)
-    {
-        if (it->size() > pattern.size() && string(*it, it->size() - pattern.size()) == pattern)
-        {
-            utilmm::pkgconfig pkg(*it);
-            string tlb = pkg.get("type_registry");
-            if (!tlb.empty())
-            {
-                try {
-                    auto_ptr<Typelib::Registry> registry( Typelib::PluginManager::load("tlb", tlb) );
-                    m_registry->merge(*registry.get());
-                    log(Info) << "loaded " << tlb << " in the data logger registry" << endlog();
-                }
-                catch(...)
-                {
-                    log(Error) << "cannot load registry file " << tlb << endlog();
-                }
-            }
-        }
-    }
 }
 
