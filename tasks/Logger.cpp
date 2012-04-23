@@ -24,7 +24,10 @@ struct Logger::ReportDescription
 {
     std::string name;
     std::string type_name;
+
+    // We don't own this one
     Typelib::Registry* registry;
+
     orogen_transports::TypelibMarshallerBase* typelib_marshaller;
     orogen_transports::TypelibMarshallerBase::Handle* marshalling_handle;
     std::vector<logger::StreamMetadata> metadata;
@@ -43,6 +46,7 @@ Logger::Logger(std::string const& name, TaskCore::TaskState initial_state)
 
 Logger::~Logger()
 {
+    clear();
     delete m_registry;
 }
 
@@ -234,6 +238,24 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
     return true;
 }
 
+void Logger::clear()
+{
+    for (Reports::iterator it = root.begin(); it != root.end(); ++it)
+    {
+        ports()->removePort(it->read_port->getName());
+        deleteReport(*it);
+    }
+    root.clear();
+}
+
+void Logger::deleteReport(ReportDescription& report)
+{
+    delete report.read_port;
+    report.typelib_marshaller->deleteHandle(report.marshalling_handle);
+    delete report.logger;
+    delete report.registry;
+}
+
 bool Logger::removeLoggingPort(std::string const& port_name)
 {
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
@@ -241,10 +263,7 @@ bool Logger::removeLoggingPort(std::string const& port_name)
         if ( it->read_port->getName() == port_name )
         {
             ports()->removePort(port_name);
-            delete it->read_port;
-            it->typelib_marshaller->deleteHandle(it->marshalling_handle);
-            delete it->logger;
-            delete it->registry;
+            deleteReport(*it);
             root.erase(it);
             return true;
         }

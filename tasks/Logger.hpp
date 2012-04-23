@@ -71,12 +71,17 @@ namespace logger {
          */
         void snapshot();
 
+        /** Removes all reporting ports and channels */
+        void clear();
+
         bool removeLoggingPort(std::string const& stream_name);
 
     private:
         typedef RTT::DataFlowInterface::Ports Ports;
 
         struct ReportDescription;
+        void deleteReport(ReportDescription& report);
+
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name);
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<logger::StreamMetadata> const& metadata);
 

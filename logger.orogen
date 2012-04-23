@@ -38,6 +38,9 @@ task_context "Logger" do
         argument("port_name", "std/string", "the name of the port to be removed").
         doc("removes a logging port created by createLoggingPort")
 
+    operation("clear").
+        doc("removes all logging ports")
+
     property("file", "std/string").
         doc "the output file name"
 end
