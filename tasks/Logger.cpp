@@ -9,6 +9,7 @@
 
 #include "Logfile.hpp"
 #include <fstream>
+#include <boost/foreach.hpp>
 
 using namespace logger;
 using namespace std;
@@ -33,6 +34,7 @@ struct Logger::ReportDescription
     std::vector<logger::StreamMetadata> metadata;
     RTT::base::DataSourceBase::shared_ptr sample;
     RTT::base::InputPortInterface* read_port;
+    int time_field_offset;
     Logging::StreamLogger* logger;
 };
 
@@ -86,6 +88,13 @@ void Logger::updateHook()
             }
 
             size_t payload_size = it->typelib_marshaller->getMarshallingSize(it->marshalling_handle);
+	    // in case there is a time field specified for the datatype, use that
+	    // one to stamp the log sample instead of base::Time::now()
+	    if( it->time_field_offset >= 0 )
+		stamp = *reinterpret_cast<base::Time*>(
+			reinterpret_cast<char*>(
+			    it->sample->getRawPointer()) + it->time_field_offset);
+
             it->logger->writeSampleHeader(stamp, payload_size);
             it->typelib_marshaller->marshal(it->logger->getStream(), it->marshalling_handle);
         }
@@ -219,6 +228,42 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
 
     ports()->addEventPort(reader->getName(), *reader);
 
+    // if there is a request to use the time field of a datatype 
+    // we need to look up the offset to that field in the registry
+    std::string time_name;
+    BOOST_FOREACH( const StreamMetadata& md_item, metadata )
+    {
+	if( md_item.key == "rock_timestamp_field" )
+	    time_name = md_item.value;
+    }
+    
+    int time_field_offset = -1;
+    if( !time_name.empty() )
+    {
+	const Typelib::Type *tl_type = m_registry->get( type->getTypeName() );
+	if( !tl_type )
+	{
+	    log(Error) << "could not get typelib type for " << type->getTypeName() << endlog();
+	    return false;
+	}
+
+	const Typelib::Compound *tl_compound = dynamic_cast<const Typelib::Compound*>( tl_type );
+	if( !tl_compound )
+	{
+	    log(Error) << "typelib type for " << type->getTypeName() << " is not a compound type." << endlog();
+	    return false;
+	}
+
+	const Typelib::Field *tl_field = tl_compound->getField( time_name );
+	if( !tl_field || tl_field->getType().getName() != "/base/Time" )
+	{
+	    log(Error) << type->getTypeName() << " does not have a " << time_name << " field of type base::Time." << endlog();
+	    return false;
+	}
+
+	time_field_offset = tl_field->getOffset();
+    }
+
     try {
         ReportDescription report;
         report.name         = reader->getName();
@@ -229,6 +274,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
         report.typelib_marshaller = transport;
         report.metadata = metadata;
         report.sample = transport->getDataSource(report.marshalling_handle);
+	report.time_field_offset = time_field_offset;
         report.logger       = NULL;
 
         root.push_back(report);
