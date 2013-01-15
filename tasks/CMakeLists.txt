@@ -5,8 +5,7 @@ include_directories(${RTT_Typelib_INCLUDE_DIRS})
 link_directories(${RTT_Typelib_LIBRARY_DIRS})
 
 ADD_LIBRARY(${LOGGER_TASKLIB_NAME} SHARED 
-    ${LOGGER_TASKLIB_SOURCES}
-    Logfile.cpp)
+    ${LOGGER_TASKLIB_SOURCES})
 
 TARGET_LINK_LIBRARIES(${LOGGER_TASKLIB_NAME}
     ${OrocosRTT_LIBRARIES}

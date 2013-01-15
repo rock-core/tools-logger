@@ -50,14 +50,6 @@ namespace logger {
          */
         std::string value;
     };
-
-    /** Structure passed to createLoggingPort to add metadata to streams
-     */
-    struct StreamMetadata
-    {
-        std::string key;
-        std::string value;
-    };
 };
 
 

@@ -7,13 +7,13 @@
 
 #include <rtt/base/InputPortInterface.hpp>
 
-#include "Logfile.hpp"
+#include "pocolog_cpp/Write.hpp"
 #include <fstream>
 #include <boost/foreach.hpp>
 
 using namespace logger;
 using namespace std;
-using namespace Logging;
+using namespace pocolog_cpp;
 using base::Time;
 using RTT::types::TypeInfo;
 using RTT::log;
@@ -31,11 +31,11 @@ struct Logger::ReportDescription
 
     orogen_transports::TypelibMarshallerBase* typelib_marshaller;
     orogen_transports::TypelibMarshallerBase::Handle* marshalling_handle;
-    std::vector<logger::StreamMetadata> metadata;
+    std::vector<StreamMetadata> metadata;
     RTT::base::DataSourceBase::shared_ptr sample;
     RTT::base::InputPortInterface* read_port;
     int time_field_offset;
-    Logging::StreamLogger* logger;
+    pocolog_cpp::StreamWriter* logger;
 };
 
 Logger::Logger(std::string const& name, TaskCore::TaskState initial_state)
@@ -60,11 +60,11 @@ bool Logger::startHook()
     // The registry has been loaded on construction
     // Now, create the output file
     auto_ptr<ofstream> io(new ofstream(_file.value().c_str()));
-    auto_ptr<Logfile>  file(new Logfile(*io));
+    auto_ptr<Output>  file(new Output(*io));
 
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
-        it->logger = new Logging::StreamLogger(
+        it->logger = new pocolog_cpp::StreamWriter(
                 it->name, it->type_name, *(it->registry), it->metadata, *file);
     }
 
@@ -83,7 +83,7 @@ void Logger::updateHook()
             it->typelib_marshaller->refreshTypelibSample(it->marshalling_handle);
             if (!it->logger)
             {
-                it->logger = new Logging::StreamLogger(
+                it->logger = new pocolog_cpp::StreamWriter(
                         it->name, it->type_name, *m_registry, it->metadata, *m_file);
             }
 
@@ -116,7 +116,7 @@ void Logger::stopHook()
 }
 
 
-bool Logger::createLoggingPort(const std::string& portname, const std::string& typestr, std::vector<logger::StreamMetadata> const& metadata)
+bool Logger::createLoggingPort(const std::string& portname, const std::string& typestr, std::vector<StreamMetadata> const& metadata)
 {
     RTT::types::TypeInfoRepository::shared_ptr ti = RTT::types::TypeInfoRepository::Instance();
     RTT::types::TypeInfo* type = ti->type(typestr);
@@ -205,10 +205,10 @@ bool Logger::reportPort(const std::string& component, const std::string& port ) 
 
 bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name)
 {
-    std::vector<logger::StreamMetadata> metadata;
+    std::vector<StreamMetadata> metadata;
     return addLoggingPort(reader, stream_name, metadata);
 }
-bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<logger::StreamMetadata> const& metadata)
+bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<StreamMetadata> const& metadata)
 {
     TypeInfo const* type = reader->getTypeInfo();
     orogen_transports::TypelibMarshallerBase* transport =

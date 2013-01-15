@@ -15,6 +15,7 @@
   <license>GPL v2 or later</license>
   <url>http://doudou.github.com/orogen</url>
   <depend package="base/orogen/types"/>
+  <depend package="tools/pocolog_cpp"/>
   <depend package="orogen"/>
   <depend package="typelib"/>
   <tags>stable</tags>

@@ -1,8 +1,10 @@
 name "logger"
 
 using_library "typelib"
+using_library "pocolog_cpp"
 import_types_from "base"
 import_types_from "LoggerTypes.hpp"
+import_types_from "pocolog_cpp/Format.hpp"
 
 # Can't define default deployments, as we are part of them !
 self.define_default_deployments = false
@@ -30,7 +32,7 @@ task_context "Logger" do
 	returns("bool").
         argument("port_name", "std/string", "the name of the port to be created").
         argument("type_name", "std/string", "the name of the type the port should handle").
-        argument("metadata", "std/vector</logger/StreamMetadata>", "the stream metadata").
+        argument("metadata", "std/vector</pocolog_cpp/StreamMetadata>", "the stream metadata").
         doc("creates a port that is associated with a given log stream of the same name, with associated metadata. Any data written to that port will be logged into that stream")
 
     operation("removeLoggingPort").

@@ -7,9 +7,9 @@
 namespace orogen_transports {
     class TypelibMarshallerBase;
 }
-namespace Logging {
-    class StreamLogger;
-    class Logfile;
+namespace pocolog_cpp {
+    class StreamWriter;
+    class Output;
 }
 namespace Typelib {
     class Registry;
@@ -29,7 +29,7 @@ namespace logger {
 
         Typelib::Registry* m_registry;
         std::ofstream*     m_io;
-        Logging::Logfile*  m_file;
+        pocolog_cpp::Output*  m_file;
     
         bool startHook();
         void updateHook();
@@ -43,7 +43,7 @@ namespace logger {
          */
         virtual bool createLoggingPort(::std::string const & port_name,
                 ::std::string const & type_name,
-                ::std::vector< ::logger::StreamMetadata > const & metadata);
+                ::std::vector< ::pocolog_cpp::StreamMetadata > const & metadata);
 
         /**
          * Report all the data ports of a component.
@@ -83,7 +83,7 @@ namespace logger {
         void deleteReport(ReportDescription& report);
 
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name);
-        bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<logger::StreamMetadata> const& metadata);
+        bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<pocolog_cpp::StreamMetadata> const& metadata);
 
         /**
          * Stores the 'datasource' of all reported items as properties.
