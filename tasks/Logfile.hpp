@@ -38,7 +38,6 @@
 #include <vector>
 //#include <map>
 #include <iosfwd>
-#include <boost/thread/mutex.hpp>
 #include <utilmm/system/endian.hh>
 #include <logger/Types.hpp>
 

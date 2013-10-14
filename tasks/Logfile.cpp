@@ -40,7 +40,6 @@
 #include <typelib/pluginmanager.hh>
 
 using namespace std;
-using boost::mutex;
 namespace endian = utilmm::endian;
 
 BOOST_STATIC_ASSERT(( sizeof(Logging::Prologue) == 16 ));
