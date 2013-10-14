@@ -36,7 +36,6 @@
 #include "Logging.hh"
 
 #include <vector>
-//#include <map>
 #include <iosfwd>
 #include <utilmm/system/endian.hh>
 #include <logger/Types.hpp>
