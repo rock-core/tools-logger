@@ -86,11 +86,11 @@ namespace Logging
             metadata_yaml = yaml_io.str();
         }
 
-        long payload_size = 1 + 4 + name.size() + 4 + type_name.size()
+        uint32_t payload_size = 1 + 4 + name.size() + 4 + type_name.size()
             + 4 + type_def.size()
             + 4 + metadata_yaml.size();
 
-        BlockHeader block_header = { StreamBlockType, 0xFF, stream_index, payload_size };
+        BlockHeader block_header = { StreamBlockType, 0xFF, static_cast<uint16_t>(stream_index), payload_size };
         *this 
             << block_header
             << static_cast<uint8_t>(type)
@@ -105,10 +105,10 @@ namespace Logging
 
     void Logfile::writeSampleHeader(int stream_index, base::Time const& realtime, base::Time const& logical, size_t payload_size)
     {
-        BlockHeader block_header = { DataBlockType, 0xFF, stream_index, SAMPLE_HEADER_SIZE + payload_size };
+        BlockHeader block_header = { DataBlockType, 0xFF, static_cast<uint16_t>(stream_index), static_cast<uint32_t>(SAMPLE_HEADER_SIZE + payload_size) };
         *this << block_header;
 
-        SampleHeader sample_header = { realtime, logical, payload_size, 0 };
+        SampleHeader sample_header = { realtime, logical, static_cast<uint32_t>(payload_size), 0 };
         *this << sample_header;
     }
 
