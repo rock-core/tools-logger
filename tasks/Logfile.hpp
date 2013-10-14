@@ -38,7 +38,7 @@
 #include <vector>
 #include <iosfwd>
 #include <utilmm/system/endian.hh>
-#include <logger/Types.hpp>
+#include <logger/LoggerTypes.hpp>
 
 namespace Typelib {
     class Registry;
