@@ -40,7 +40,7 @@
 #include <typelib/pluginmanager.hh>
 
 using namespace std;
-namespace endian = utilmm::endian;
+namespace endian = Typelib::Endian;
 
 BOOST_STATIC_ASSERT(( sizeof(Logging::Prologue) == 16 ));
 

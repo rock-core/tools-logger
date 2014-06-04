@@ -37,7 +37,7 @@
 
 #include <vector>
 #include <iosfwd>
-#include <utilmm/system/endian.hh>
+#include <typelib/endian_swap.hh>
 #include <logger/LoggerTypes.hpp>
 
 namespace Typelib {
@@ -57,7 +57,7 @@ namespace Logging
         template<class T>
         void write(const T& data) 
         { 
-	    T little_endian = utilmm::endian::to_little(data);
+	    T little_endian = Typelib::Endian::to_little(data);
 	    m_stream.write( reinterpret_cast<const char*>(&little_endian), sizeof(T) ); 
 	}
        
