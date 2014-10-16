@@ -9,6 +9,7 @@
 
 #include "Logfile.hpp"
 #include <fstream>
+#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 
 using namespace logger;
@@ -56,6 +57,12 @@ bool Logger::startHook()
 {
     if (_file.value().empty())
         return false;
+
+    if(boost::filesystem::exists(_file.value()))
+    {
+        log(Error) << "File " << _file.value() << " already exists." << endlog();
+        return false;
+    }
 
     // The registry has been loaded on construction
     // Now, create the output file
