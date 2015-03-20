@@ -79,8 +79,7 @@ namespace Logging
 
     namespace details
     {
-        template <bool value> struct static_check;
-        template<> struct static_check<true> {};
+        template <typename T> struct static_failure;
     }
 
     /** Writes the file prologue */
@@ -89,7 +88,7 @@ namespace Logging
     template<class T>
     Logfile& operator << (Logfile& output, const T& value)
     {
-        details::static_check<false> test;
+        details::static_failure<T> IF_YOU_HAVE_AN_ERROR_HERE_YOU_USED_THE_STREAM_OPERATOR_WITH_AN_INVALID_TYPE;
         return output;
     }
 
