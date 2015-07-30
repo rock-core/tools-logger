@@ -43,6 +43,11 @@ task_context "Logger" do
 
     property("file", "std/string").
         doc "the output file name"
+
+    # Controls whether the logger should overwrite an existing file or fail in
+    # configure. The default is to fail, but this flag is needed if one wants to
+    # use safe temporary files as targets
+    property 'overwrite_existing_files', '/bool', false
 end
 
 typekit do
