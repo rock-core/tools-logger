@@ -26,6 +26,7 @@ struct Logger::ReportDescription
 {
     std::string name;
     std::string type_name;
+    std::string cxx_type_name;
 
     // We don't own this one
     Typelib::Registry* registry;
@@ -72,7 +73,7 @@ bool Logger::startHook()
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
         it->logger = new Logging::StreamLogger(
-                it->name, it->type_name, *(it->registry), it->metadata, *file);
+                it->name, it->type_name, it->cxx_type_name,*(it->registry), it->metadata, *file);
     }
 
     m_io   = io.release();
@@ -91,7 +92,7 @@ void Logger::updateHook()
             if (!it->logger)
             {
                 it->logger = new Logging::StreamLogger(
-                        it->name, it->type_name, *m_registry, it->metadata, *m_file);
+                        it->name, it->type_name, it->cxx_type_name, *m_registry, it->metadata, *m_file);
             }
 
             size_t payload_size = it->typelib_marshaller->getMarshallingSize(it->marshalling_handle);
@@ -275,6 +276,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
         ReportDescription report;
         report.name         = reader->getName();
         report.type_name    = transport->getMarshallingType();
+        report.cxx_type_name = type->getTypeName();
         report.read_port    = reader;
         report.registry     = m_registry->minimal(report.type_name);
         report.marshalling_handle = transport->createSample();

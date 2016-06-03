@@ -71,7 +71,7 @@ namespace Logging
 
         void writeStreamDeclaration(int stream_index, StreamType type,
                 std::string const& name, std::string const& type_name,
-                std::string const& type_def,
+                std::string const& cxx_type_name, std::string const& type_def,
                 std::vector<logger::StreamMetadata> const& metadata);
         void writeSampleHeader(int stream_index, base::Time const& realtime, base::Time const& logical, size_t size);
         void writeSample(int stream_index, base::Time const& realtime, base::Time const& logical, void* payload_data, size_t payload_size);
@@ -163,6 +163,7 @@ namespace Logging
     {
         std::string const m_name;
         std::string const m_type_name;
+        std::string const m_cxx_type_name;
         std::string const m_type_def;
         std::vector<logger::StreamMetadata> m_metadata;
         int const m_stream_idx;
@@ -182,7 +183,7 @@ namespace Logging
          * @arg type_name the stream type name
          * @arg stream the stream object
          */
-        StreamLogger(std::string const& name, std::string const& type_name, std::vector<logger::StreamMetadata> const& metadata, Logfile& file);
+        StreamLogger(std::string const& name, std::string const& type_name, std::string const& cxx_type_name, std::vector<logger::StreamMetadata> const& metadata, Logfile& file);
 
         /** Create a new logger, with type definition
          *
@@ -195,7 +196,7 @@ namespace Logging
          * @arg registry the Typelib registry which defines the associated type name
          * @arg stream the stream object
          */
-        StreamLogger(std::string const& name, std::string const& type_name, Typelib::Registry const& type_def, std::vector<logger::StreamMetadata> const& metadata, Logfile& file);
+        StreamLogger(std::string const& name, std::string const& type_name, std::string const& cxx_type_name, Typelib::Registry const& type_def, std::vector<logger::StreamMetadata> const& metadata, Logfile& file);
 
         /** Registers the sample stream in the output file */
         void registerStream();
