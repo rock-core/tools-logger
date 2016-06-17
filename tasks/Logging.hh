@@ -33,7 +33,7 @@
 #ifndef OROCOS_LOGGER_H
 #define OROCOS_LOGGER_H
 
-#include <base/time.h>
+#include <base/Time.hpp>
 #include <stdint.h>
 
 /** Log files are made of blocks. Each block begins with a common block header. 

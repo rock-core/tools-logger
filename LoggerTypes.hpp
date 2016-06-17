@@ -1,7 +1,7 @@
 #ifndef LOGGER_TYPES_HPP
 #define LOGGER_TYPES_HPP
 
-#include <base/time.h>
+#include <base/Time.hpp>
 
 namespace logger {
     /** DEPRECATED. This predated the annotation / metadata system */
