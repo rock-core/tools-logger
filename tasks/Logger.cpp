@@ -12,6 +12,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
 using namespace logger;
 using namespace std;
 using namespace Logging;
@@ -59,10 +63,16 @@ bool Logger::startHook()
     if (_file.value().empty())
         return false;
 
-    if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get())
+    if(boost::filesystem::exists(_file.value()))
     {
-        log(Error) << "File " << _file.value() << " already exists." << endlog();
-        return false;
+        if(!_overwrite_existing_files.get()){
+            // increment the log file number to store it in a new file
+            vector<string> strs;
+            boost::split(strs, _file.value(), boost::is_any_of("."));
+            int nr = stoi(strs[strs.size()-2]);
+            strs[strs.size()-2] = to_string(nr +1);
+            _file.set( boost::algorithm::join(strs, ".") );
+        }
     }
 
     // The registry has been loaded on construction
@@ -133,7 +143,7 @@ bool Logger::createLoggingPort(const std::string& portname, const std::string& t
 	cerr << "cannot find " << typestr << " in the type info repository" << endl;
 	return false;
     }
-    
+
     RTT::base::PortInterface *pi = ports()->getPort(portname);
     if(pi) {
 	cerr << "port with name " << portname << " already exists" << endl;
@@ -193,10 +203,10 @@ bool Logger::reportPort(const std::string& component, const std::string& port ) 
         return false;
     }
 
-    
+
     std::string portname(component + "." + port);
     RTT::base::PortInterface *pi = ports()->getPort(portname);
-    
+
     if(pi) // we are already reporting this port
     {
         log(Info) << "port " << port << " of component " << component << " is already logged" << endlog();
@@ -236,7 +246,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
 
     ports()->addEventPort(reader->getName(), *reader);
 
-    // if there is a request to use the time field of a datatype 
+    // if there is a request to use the time field of a datatype
     // we need to look up the offset to that field in the registry
     std::string time_name;
     BOOST_FOREACH( const StreamMetadata& md_item, metadata )
@@ -244,7 +254,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
 	if( md_item.key == "rock_timestamp_field" )
 	    time_name = md_item.value;
     }
-    
+
     int time_field_offset = -1;
     if( !time_name.empty() )
     {
@@ -348,4 +358,3 @@ void Logger::snapshot()
     if( this->engine()->getActivity() )
         this->engine()->getActivity()->trigger();
 }
-
