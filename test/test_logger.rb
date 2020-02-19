@@ -75,7 +75,7 @@ class TC_BasicBehaviour < Minitest::Test
         meta << Hash['key' => 'key1', 'value' => 'value1']
         assert(task.createLoggingPort('time', '/base/Time', meta))
         stream = generate_and_check_logfile
-        assert_equal({'key0' => 'value0', 'key1' => 'value1'}, stream.metadata)
+        assert_equal({'key0' => 'value0', 'key1' => 'value1', 'rock_cxx_type_name' => '/base/Time'}, stream.metadata)
     end
 
     def test_create_port_log
@@ -93,7 +93,8 @@ class TC_BasicBehaviour < Minitest::Test
             'rock_task_model' => nil,
             'rock_task_name' => 'source',
             'rock_task_object_name' => 'out',
-            'rock_orocos_type_name' => '/int32_t'
+            'rock_orocos_type_name' => '/int32_t',
+            'rock_cxx_type_name' => '/int32_t'
         }
         assert_equal expected_metadata, stream.metadata
     end
@@ -131,7 +132,8 @@ class TC_BasicBehaviour < Minitest::Test
             'rock_task_model' => nil,
             'rock_task_name' => 'source',
             'rock_task_object_name' => 'file',
-            'rock_orocos_type_name' => '/std/string'
+            'rock_orocos_type_name' => '/std/string',
+            'rock_cxx_type_name' => '/std/string'
         }
         assert_equal expected_metadata, stream.metadata
     end
