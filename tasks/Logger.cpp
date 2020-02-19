@@ -9,8 +9,12 @@
 
 #include "Logfile.hpp"
 #include <fstream>
+#include <time.h>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 using namespace logger;
 using namespace std;
@@ -20,6 +24,7 @@ using RTT::types::TypeInfo;
 using RTT::log;
 using RTT::endlog;
 using RTT::Error;
+using RTT::Warning;
 using RTT::Info;
 
 struct Logger::ReportDescription
@@ -56,13 +61,31 @@ Logger::~Logger()
 
 bool Logger::startHook()
 {
-    if (_file.value().empty())
-        return false;
+    if(_file.value().empty())
+    {
+      log(Error) << "Could not create log file. Task property _file is empty." << endlog();
+      return false;
+    }
 
     if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get())
     {
-        log(Error) << "File " << _file.value() << " already exists." << endlog();
-        return false;
+        log(Warning) << "File " << _file.value() << " already exists." << endlog();
+        // create timestamp
+        time_t now = time(0);
+        tm *t_ptr = localtime(&now);
+        char suffix[21];
+        strftime(suffix, sizeof(suffix), "%F_%H-%M-%S", t_ptr);
+        // append suffix to previous _file.value()
+        vector<string> strs;
+        boost::split(strs, _file.value(), boost::is_any_of("."));
+        strs.insert(strs.end()-1, std::string(suffix));
+        // safety check if timestamped file exists
+        if(boost::filesystem::exists(boost::algorithm::join(strs, "."))) {
+          log(Error) << "Timestamped file " << _file.value() << " already exists." << endlog();
+          return false;
+        }
+        _file.set(boost::algorithm::join(strs, "."));
+        log(Warning) << "Writing to " << _file.value() << " ." << endlog();
     }
 
     // The registry has been loaded on construction
