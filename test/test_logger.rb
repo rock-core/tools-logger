@@ -14,7 +14,8 @@ class TC_BasicBehaviour < Minitest::Test
 
     def setup
         super
-        task.overwrite_existing_files = true
+        task.overwrite_existing_files = false
+        task.auto_rename_existing_files = true
         task.file = logfile_path
     end
 
@@ -27,15 +28,22 @@ class TC_BasicBehaviour < Minitest::Test
         if @logfile_io
             @logfile_io.close
         end
+        if @logfile
+            @logfile.close
+        end
     end
 
-    def logfile_path
-        @logfile_io ||= Tempfile.open('rock_logger_test.0.log')
+    def logfile_path(arg='/tmp/rock_logger_test.log')
+        @logfile_io ||= File.open(arg, "w+")
+        unless @logfile_io.path == arg
+          @logfile_io.close
+          @logfile_io = File.open(arg, "w+")
+        end
         @logfile_io.path
     end
 
-    def logfile
-        @logfile ||= Pocolog::Logfiles.open(logfile_path)
+    def logfile(file)
+        @logfile ||= Pocolog::Logfiles.open(logfile_path(file))
     end
 
     def generate_and_check_logfile
@@ -52,11 +60,15 @@ class TC_BasicBehaviour < Minitest::Test
         end
         sleep 0.1
 
+        # Consider possible changes of _file property before flushing
+        if task.auto_rename_existing_files
+            logfile_path(task.file)
+        end
         # Make sure the I/O is properly flushed
         task.stop
         task.cleanup
 
-        stream = logfile.stream('time')
+        stream = logfile(task.file).stream('time')
         samples = stream.samples.to_a.map(&:last)
         assert_equal(expected, samples)
         stream
@@ -85,9 +97,12 @@ class TC_BasicBehaviour < Minitest::Test
         assert(task.has_port?('source.out'))
         task.configure
         task.start
+        if task.auto_rename_existing_files
+            logfile_path(task.file)
+        end
         task.stop
 
-        stream = logfile.stream('source.out')
+        stream = logfile(task.file).stream('source.out')
         expected_metadata = {
             'rock_stream_type' => 'port',
             'rock_task_model' => nil,
@@ -112,8 +127,11 @@ class TC_BasicBehaviour < Minitest::Test
         source.out.write 3
         sleep 0.1
 
+        if task.auto_rename_existing_files
+            logfile_path(task.file)
+        end
         task.stop
-        stream = logfile.stream('source.out')
+        stream = logfile(task.file).stream('source.out')
         assert_equal [1, 2, 3], stream.samples.to_a.map(&:last)
     end
 
@@ -124,9 +142,12 @@ class TC_BasicBehaviour < Minitest::Test
         assert(task.has_port?('source.file'))
         task.configure
         task.start
+        if task.auto_rename_existing_files
+            logfile_path(task.file)
+        end
         task.stop
 
-        stream = logfile.stream('source.file')
+        stream = logfile(task.file).stream('source.file')
         expected_metadata = {
             'rock_stream_type' => 'property',
             'rock_task_model' => nil,
@@ -149,10 +170,12 @@ class TC_BasicBehaviour < Minitest::Test
         source.file = "bla.0.log"
         sleep 0.1
 
+        if task.auto_rename_existing_files
+            logfile_path(task.file)
+        end
         task.stop
 
-        stream = logfile.stream('source.file')
+        stream = logfile(task.file).stream('source.file')
         assert_equal ["test", "bla.0.log"], stream.samples.to_a.map(&:last)
     end
 end
-

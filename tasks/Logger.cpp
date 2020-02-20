@@ -67,7 +67,13 @@ bool Logger::startHook()
       return false;
     }
 
-    if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get())
+    if(_overwrite_existing_files.get() && _auto_rename_existing_files.get())
+    {
+      log(Error) << "Ambiguous property values. Both _overwrite_existing_files and _auto_rename_existing_files are set to true." << endlog();
+      return false;
+    }
+
+    if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get() && _auto_rename_existing_files.get())
     {
         log(Warning) << "File " << _file.value() << " already exists." << endlog();
         // create timestamp
@@ -80,11 +86,12 @@ bool Logger::startHook()
         boost::split(strs, _file.value(), boost::is_any_of("."));
         strs.insert(strs.end()-1, std::string(suffix));
         // safety check if timestamped file exists
-        if(boost::filesystem::exists(boost::algorithm::join(strs, "."))) {
-          log(Error) << "Timestamped file " << _file.value() << " already exists." << endlog();
+        std::string timestamped_str = boost::algorithm::join(strs, ".");
+        if(boost::filesystem::exists(timestamped_str)) {
+          log(Error) << "Timestamped file " << _file.value() << " already exists. Please retry." << endlog();
           return false;
         }
-        _file.set(boost::algorithm::join(strs, "."));
+        _file.set(timestamped_str);
         log(Warning) << "Writing to " << _file.value() << " ." << endlog();
     }
 
