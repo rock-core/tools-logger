@@ -49,6 +49,7 @@ task_context "Logger" do
     # use safe temporary files as targets
     property 'overwrite_existing_files', '/bool', false
     property 'auto_rename_existing_files', '/bool', false
+    attribute 'current_file', 'std/string'
 end
 
 typekit do

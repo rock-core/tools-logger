@@ -67,43 +67,45 @@ bool Logger::startHook()
       return false;
     }
 
+    _current_file.set(_file.value());
+
     if(_overwrite_existing_files.get() && _auto_rename_existing_files.get())
     {
       log(Error) << "Ambiguous property values. Both _overwrite_existing_files and _auto_rename_existing_files are set to true." << endlog();
       return false;
     }
 
-    if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get() && !_auto_rename_existing_files.get())
+    if(boost::filesystem::exists(_current_file.get()) && !_overwrite_existing_files.get() && !_auto_rename_existing_files.get())
     {
-      log(Error) << "File " << _file.value() << " already exists. No overwrite allowed by task property." << endlog();
+      log(Error) << "File " << _current_file.get() << " already exists. No overwrite allowed by task property." << endlog();
       return false;
     }
 
-    if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get() && _auto_rename_existing_files.get())
+    if(boost::filesystem::exists(_current_file.get()) && !_overwrite_existing_files.get() && _auto_rename_existing_files.get())
     {
-        log(Warning) << "File " << _file.value() << " already exists." << endlog();
+        log(Warning) << "File " << _current_file.get() << " already exists." << endlog();
         // create timestamp
         time_t now = time(0);
         tm *t_ptr = localtime(&now);
         char suffix[21];
         strftime(suffix, sizeof(suffix), "%F_%H-%M-%S", t_ptr);
-        // append suffix to previous _file.value()
+        // append suffix to previous _current_file.get()
         vector<string> strs;
-        boost::split(strs, _file.value(), boost::is_any_of("."));
+        boost::split(strs, _current_file.get(), boost::is_any_of("."));
         strs.insert(strs.end()-1, std::string(suffix));
         // safety check if timestamped file exists
         std::string timestamped_str = boost::algorithm::join(strs, ".");
-        if(boost::filesystem::exists(timestamped_str)) {
-          log(Error) << "Timestamped file " << _file.value() << " already exists. Please retry." << endlog();
-          return false;
+        while(boost::filesystem::exists(timestamped_str)) {
+          log(Warning) << "Timestamped file " << _current_file.get() << " already exists. Retrying in 1 second." << endlog();
+          usleep(1*1000000);
         }
-        _file.set(timestamped_str);
-        log(Info) << "Writing to " << _file.value() << " ." << endlog();
+        _current_file.set(timestamped_str);
+        log(Info) << "Writing to " << _current_file.get() << " ." << endlog();
     }
 
     // The registry has been loaded on construction
     // Now, create the output file
-    auto_ptr<ofstream> io(new ofstream(_file.value().c_str()));
+    auto_ptr<ofstream> io(new ofstream(_current_file.get().c_str()));
     auto_ptr<Logfile>  file(new Logfile(*io));
 
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
