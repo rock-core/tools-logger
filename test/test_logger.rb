@@ -14,8 +14,8 @@ class TC_BasicBehaviour < Minitest::Test
 
     def setup
         super
-        task.overwrite_existing_files = false
-        task.auto_rename_existing_files = true
+        task.overwrite_existing_files = true
+        task.auto_rename_existing_files = false
         task.file = logfile_path
     end
 
@@ -78,6 +78,34 @@ class TC_BasicBehaviour < Minitest::Test
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
         generate_and_check_logfile
+    end
+
+    def test_no_overwrite
+        task.overwrite_existing_files = false
+        task.auto_rename_existing_files = false
+        task.configure
+        assert_raises Orocos::StateTransitionFailed do
+          task.start
+        end
+        puts '[INFO] This Error is expected and handled.'
+    end
+
+    def test_auto_renaming
+        task.overwrite_existing_files = false
+        task.auto_rename_existing_files = true
+        assert(!task.has_port?('time'))
+        assert(task.createLoggingPort('time', '/base/Time', []))
+        generate_and_check_logfile
+    end
+
+    def test_ambiguous_properties
+        task.overwrite_existing_files = true
+        task.auto_rename_existing_files = true
+        task.configure
+        assert_raises Orocos::StateTransitionFailed do
+          task.start
+        end
+        puts '[INFO] This Error is expected and handled.'
     end
 
     def test_metadata

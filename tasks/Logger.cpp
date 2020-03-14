@@ -73,6 +73,12 @@ bool Logger::startHook()
       return false;
     }
 
+    if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get() && !_auto_rename_existing_files.get())
+    {
+      log(Error) << "File " << _file.value() << " already exists. No overwrite allowed by task property." << endlog();
+      return false;
+    }
+
     if(boost::filesystem::exists(_file.value()) && !_overwrite_existing_files.get() && _auto_rename_existing_files.get())
     {
         log(Warning) << "File " << _file.value() << " already exists." << endlog();
@@ -92,7 +98,7 @@ bool Logger::startHook()
           return false;
         }
         _file.set(timestamped_str);
-        log(Warning) << "Writing to " << _file.value() << " ." << endlog();
+        log(Info) << "Writing to " << _file.value() << " ." << endlog();
     }
 
     // The registry has been loaded on construction
