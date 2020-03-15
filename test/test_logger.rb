@@ -3,7 +3,6 @@ require 'orocos/test/component'
 
 require 'pocolog'
 require 'fileutils'
-require 'pry'
 
 class TC_BasicBehaviour < Minitest::Test
     include Orocos::Test::Component
@@ -90,6 +89,7 @@ class TC_BasicBehaviour < Minitest::Test
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
         generate_and_check_logfile
+        assert(task.file != task.current_file)
     end
 
     def test_re_renaming
@@ -101,7 +101,7 @@ class TC_BasicBehaviour < Minitest::Test
         task.configure
         task.start
         task.stop
-        task.start
+        generate_and_check_logfile
         assert(task.file != task.current_file)
     end
 
