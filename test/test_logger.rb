@@ -92,6 +92,19 @@ class TC_BasicBehaviour < Minitest::Test
         generate_and_check_logfile
     end
 
+    def test_re_renaming
+        task.overwrite_existing_files = false
+        task.auto_rename_existing_files = true
+        touch_file = File.new(task.file, "w")
+        assert(!task.has_port?('time'))
+        assert(task.createLoggingPort('time', '/base/Time', []))
+        task.configure
+        task.start
+        task.stop
+        task.start
+        assert(task.file != task.current_file)
+    end
+
     def test_ambiguous_properties
         task.overwrite_existing_files = true
         task.auto_rename_existing_files = true
