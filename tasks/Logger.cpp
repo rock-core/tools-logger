@@ -84,22 +84,12 @@ bool Logger::startHook()
     if(boost::filesystem::exists(_current_file.get()) && !_overwrite_existing_files.get() && _auto_rename_existing_files.get())
     {
         log(Warning) << "File " << _current_file.get() << " already exists." << endlog();
-        // create timestamp
-        time_t now = time(0);
-        tm *t_ptr = localtime(&now);
-        char suffix[21];
-        strftime(suffix, sizeof(suffix), "%F_%H-%M-%S", t_ptr);
-        // append suffix to previous _current_file.get()
-        vector<string> strs;
-        boost::split(strs, _current_file.get(), boost::is_any_of("."));
-        strs.insert(strs.end()-1, std::string(suffix));
-        // safety check if timestamped file exists
-        std::string timestamped_str = boost::algorithm::join(strs, ".");
-        while(boost::filesystem::exists(timestamped_str)) {
+        renameFile();
+        while(boost::filesystem::exists(_current_file.get())) {
           log(Warning) << "Timestamped file " << _current_file.get() << " already exists. Retrying in 1 second." << endlog();
           usleep(1*1000000);
+          renameFile();
         }
-        _current_file.set(timestamped_str);
         log(Info) << "Writing to " << _current_file.get() << " ." << endlog();
     }
 
@@ -385,5 +375,20 @@ void Logger::snapshot()
     // execute the copy commands (fast).
     if( this->engine()->getActivity() )
         this->engine()->getActivity()->trigger();
+}
+
+void Logger::renameFile(){
+    // create timestamp
+    time_t now = time(0);
+    tm *t_ptr = localtime(&now);
+    char suffix[21];
+    strftime(suffix, sizeof(suffix), "%F_%H-%M-%S", t_ptr);
+    // append suffix to previous _current_file.get()
+    vector<string> strs;
+    boost::split(strs, _file.value(), boost::is_any_of("."));
+    strs.insert(strs.end()-1, std::string(suffix));
+    // safety check if timestamped file exists
+    std::string timestamped_str = boost::algorithm::join(strs, ".");
+    _current_file.set(timestamped_str);
 }
 

@@ -76,6 +76,10 @@ namespace logger {
 
         bool removeLoggingPort(std::string const& stream_name);
 
+        /** Timestamp output file for automatic renaming capability
+         *  Sets _current_file attribute */
+        void renameFile();
+
     private:
         typedef RTT::DataFlowInterface::Ports Ports;
 
