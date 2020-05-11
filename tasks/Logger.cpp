@@ -69,19 +69,18 @@ bool Logger::startHook()
 
     _current_file.set(_file.value());
 
-    if(_overwrite_existing_files.get() && _auto_rename_existing_files.get())
+    if(boost::filesystem::exists(_current_file.get()) && !_overwrite_existing_files.get() && !_auto_timestamp_files.get())
     {
-      log(Error) << "Ambiguous property values. Both _overwrite_existing_files and _auto_rename_existing_files are set to true." << endlog();
+      log(Error) << "File " << _current_file.get() << " already exists. Neither overwrite nor auto-timestamp allowed by task properties." << endlog();
       return false;
     }
 
-    if(boost::filesystem::exists(_current_file.get()) && !_overwrite_existing_files.get() && !_auto_rename_existing_files.get())
+    if(boost::filesystem::exists(_current_file.get()) && _overwrite_existing_files.get() && !_auto_timestamp_files.get())
     {
-      log(Error) << "File " << _current_file.get() << " already exists. No overwrite allowed by task property." << endlog();
-      return false;
+      log(Info) << "File " << _current_file.get() << " already exists. Overwriting existing file." << endlog();
     }
 
-    if(boost::filesystem::exists(_current_file.get()) && !_overwrite_existing_files.get() && _auto_rename_existing_files.get())
+    if(boost::filesystem::exists(_current_file.get()) && _auto_timestamp_files.get())
     {
         log(Warning) << "File " << _current_file.get() << " already exists." << endlog();
         renameFile();

@@ -48,7 +48,7 @@ task_context "Logger" do
     # configure. The default is to fail, but this flag is needed if one wants to
     # use safe temporary files as targets
     property 'overwrite_existing_files', '/bool', false
-    property 'auto_rename_existing_files', '/bool', false
+    property 'auto_timestamp_files', '/bool', false
     attribute 'current_file', 'std/string'
 end
 

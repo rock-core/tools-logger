@@ -15,7 +15,7 @@ class TC_BasicBehaviour < Minitest::Test
     def setup
         super
         task.overwrite_existing_files = true
-        task.auto_rename_existing_files = false
+        task.auto_timestamp_files = false
         task.file = "/tmp/rock_logger_test.log"
     end
 
@@ -71,20 +71,19 @@ class TC_BasicBehaviour < Minitest::Test
         generate_and_check_logfile
     end
 
-    def test_no_overwrite
+    def test_no_overwrite_expect_transition_error
         task.overwrite_existing_files = false
-        task.auto_rename_existing_files = false
+        task.auto_timestamp_files = false
         task.configure
         touch_file = File.new(task.file, "w")
         assert_raises Orocos::StateTransitionFailed do
             task.start
         end
-        puts '[INFO] This Error is expected and handled.'
     end
 
-    def test_auto_renaming
+    def test_auto_timestamp_file
         task.overwrite_existing_files = false
-        task.auto_rename_existing_files = true
+        task.auto_timestamp_files = true
         touch_file = File.new(task.file, "w")
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
@@ -92,9 +91,9 @@ class TC_BasicBehaviour < Minitest::Test
         assert(task.file != task.current_file)
     end
 
-    def test_re_renaming
+    def test_re_stamping_existing_timestamped_file
         task.overwrite_existing_files = false
-        task.auto_rename_existing_files = true
+        task.auto_timestamp_files = true
         touch_file = File.new(task.file, "w")
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
@@ -103,16 +102,6 @@ class TC_BasicBehaviour < Minitest::Test
         task.stop
         generate_and_check_logfile
         assert(task.file != task.current_file)
-    end
-
-    def test_ambiguous_properties
-        task.overwrite_existing_files = true
-        task.auto_rename_existing_files = true
-        task.configure
-        assert_raises Orocos::StateTransitionFailed do
-            task.start
-        end
-        puts '[INFO] This Error is expected and handled.'
     end
 
     def test_metadata
