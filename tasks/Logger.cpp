@@ -67,29 +67,20 @@ bool Logger::startHook()
       return false;
     }
 
+    if (_overwrite_existing_files.get() && _auto_timestamp_files.get())
+    {
+        log(Error) << "The properties overwrite_existing_files and auto_timestamp_files are both set to true, but are mutually exclusive." << endlog();
+        return false;
+    }
+
     _current_file.set(_file.value());
 
-    if(boost::filesystem::exists(_current_file.get()) && !_overwrite_existing_files.get() && !_auto_timestamp_files.get())
+    if (boost::filesystem::exists(_current_file.get()))
     {
-      log(Error) << "File " << _current_file.get() << " already exists. Neither overwrite nor auto-timestamp allowed by task properties." << endlog();
-      return false;
-    }
-
-    if(boost::filesystem::exists(_current_file.get()) && _overwrite_existing_files.get() && !_auto_timestamp_files.get())
-    {
-      log(Info) << "File " << _current_file.get() << " already exists. Overwriting existing file." << endlog();
-    }
-
-    if(boost::filesystem::exists(_current_file.get()) && _auto_timestamp_files.get())
-    {
-        log(Warning) << "File " << _current_file.get() << " already exists." << endlog();
-        renameFile();
-        while(boost::filesystem::exists(_current_file.get())) {
-          log(Warning) << "Timestamped file " << _current_file.get() << " already exists. Retrying in 1 second." << endlog();
-          usleep(1*1000000);
-          renameFile();
+        if (!handleExistingFile())
+        {
+            return false;
         }
-        log(Info) << "Writing to " << _current_file.get() << " ." << endlog();
     }
 
     // The registry has been loaded on construction
@@ -376,7 +367,8 @@ void Logger::snapshot()
         this->engine()->getActivity()->trigger();
 }
 
-void Logger::renameFile(){
+void Logger::renameFile()
+{
     // create timestamp
     time_t now = time(0);
     tm *t_ptr = localtime(&now);
@@ -391,3 +383,31 @@ void Logger::renameFile(){
     _current_file.set(timestamped_str);
 }
 
+bool Logger::handleExistingFile()
+{
+    if (!_overwrite_existing_files.get() && !_auto_timestamp_files.get())
+    {
+        log(Error) << "File " << _current_file.get() << " already exists. Neither overwrite nor auto-timestamp allowed by task properties." << endlog();
+        return false;
+    }
+
+    if (_overwrite_existing_files.get() && !_auto_timestamp_files.get())
+    {
+        log(Info) << "File " << _current_file.get() << " already exists. Overwriting existing file." << endlog();
+        return true;
+    }
+
+    if (!_overwrite_existing_files.get() && _auto_timestamp_files.get())
+    {
+        log(Warning) << "File " << _current_file.get() << " already exists." << endlog();
+        renameFile();
+        while(boost::filesystem::exists(_current_file.get()))
+        {
+            log(Warning) << "Timestamped file " << _current_file.get() << " already exists. Retrying in 1 second." << endlog();
+            usleep(1*1000000);
+            renameFile();
+        }
+        log(Info) << "Writing to " << _current_file.get() << " ." << endlog();
+        return true;
+    }
+}
