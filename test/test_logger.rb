@@ -31,7 +31,7 @@ class TC_BasicBehaviour < Minitest::Test
     end
 
     def logfile_path
-        @logfile_io ||= File.open(task.current_file, "w+")
+        @logfile_io ||= File.open(task.current_file)
         @logfile_io.path
     end
 
@@ -69,6 +69,15 @@ class TC_BasicBehaviour < Minitest::Test
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
         generate_and_check_logfile
+    end
+
+    def test_conflicting_properties_expect_transition_error
+        task.overwrite_existing_files = true
+        task.auto_timestamp_files = true
+        task.configure
+        assert_raises Orocos::StateTransitionFailed do
+            task.start
+        end
     end
 
     def test_no_overwrite_expect_transition_error

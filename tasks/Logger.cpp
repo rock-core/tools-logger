@@ -407,7 +407,7 @@ bool Logger::handleExistingFile()
             usleep(1*1000000);
             renameFile();
         }
-        log(Info) << "Writing to " << _current_file.get() << " ." << endlog();
+        log(Warning) << "Writing log to " << _current_file.get() << " instead." << endlog();
         return true;
     }
 }
