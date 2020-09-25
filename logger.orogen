@@ -45,7 +45,7 @@ task_context "Logger" do
         doc "the output file name"
 
     # Controls whether the logger should overwrite or timestamp an existing file, if it already exists.
-    # The default is to fail, but one of this flags is needed, if one wants to use safe temporary files as targets.
+    # The default is to fail, but one of these flags is needed, if one wants to use safe temporary files as targets.
     # The flags are mutually exclusive, therefore the task will fail if both are true.
     property 'overwrite_existing_files', '/bool', false
     property 'auto_timestamp_files'    , '/bool', false

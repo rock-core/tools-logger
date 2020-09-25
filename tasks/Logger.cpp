@@ -377,8 +377,11 @@ void Logger::renameFile()
     // append suffix to previous _current_file.get()
     vector<string> strs;
     boost::split(strs, _file.value(), boost::is_any_of("."));
-    strs.insert(strs.end()-1, std::string(suffix));
-    // safety check if timestamped file exists
+    if ( strs.size() == 1) {
+        strs.insert(strs.end(), std::string(suffix));
+    } else {
+        strs.insert(strs.end()-1, std::string(suffix));
+    }
     std::string timestamped_str = boost::algorithm::join(strs, ".");
     _current_file.set(timestamped_str);
 }
