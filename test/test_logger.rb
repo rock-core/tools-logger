@@ -113,6 +113,17 @@ class TC_BasicBehaviour < Minitest::Test
         assert(task.file != task.current_file)
     end
 
+    def test_no_suffix_log_file
+        task.overwrite_existing_files = false
+        task.auto_timestamp_files = true
+        task.file = "/tmp/rock_logger_test"
+        touch_file = File.new(task.file, "w")
+        assert(!task.has_port?('time'))
+        assert(task.createLoggingPort('time', '/base/Time', []))
+        generate_and_check_logfile
+        assert(task.file != task.current_file)
+    end
+
     def test_metadata
         assert(!task.has_port?('time'))
         meta = []
