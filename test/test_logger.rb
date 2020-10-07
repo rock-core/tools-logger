@@ -121,7 +121,7 @@ class TC_BasicBehaviour < Minitest::Test
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
         generate_and_check_logfile
-        assert(task.file != task.current_file)
+        assert(task.file == task.current_file.split('.')[0])
     end
 
     def test_metadata
