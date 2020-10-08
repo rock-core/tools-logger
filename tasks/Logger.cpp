@@ -75,12 +75,17 @@ bool Logger::startHook()
 
     _current_file.set(_file.value());
 
+    if (_auto_timestamp_files.get()) { timestampFile(); }
+
     if (boost::filesystem::exists(_current_file.get()))
     {
         if (!handleExistingFile())
         {
             return false;
         }
+    } else if (_auto_timestamp_files.get())
+    {
+        log(Info) << "Successfully timestamped log file. Writing to: " << _current_file.get() << endlog();
     }
 
     // The registry has been loaded on construction
@@ -234,6 +239,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
     std::vector<logger::StreamMetadata> metadata;
     return addLoggingPort(reader, stream_name, metadata);
 }
+
 bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<logger::StreamMetadata> const& metadata)
 {
     TypeInfo const* type = reader->getTypeInfo();
@@ -347,7 +353,6 @@ bool Logger::removeLoggingPort(std::string const& port_name)
 
 bool Logger::unreportPort(const std::string& component, const std::string& port )
 {
-
     std::string name = component + "." + port;
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
@@ -367,14 +372,14 @@ void Logger::snapshot()
         this->engine()->getActivity()->trigger();
 }
 
-void Logger::renameFile()
+void Logger::timestampFile()
 {
     // create timestamp
     time_t now = time(0);
     tm *t_ptr = localtime(&now);
     char suffix[21];
     strftime(suffix, sizeof(suffix), "%F_%H-%M-%S", t_ptr);
-    // append suffix to previous _current_file.get()
+    // append suffix to previous _file.value()
     vector<string> strs;
     boost::split(strs, _file.value(), boost::is_any_of("."));
     if ( strs.size() == 1) {
@@ -402,14 +407,11 @@ bool Logger::handleExistingFile()
 
     if (!_overwrite_existing_files.get() && _auto_timestamp_files.get())
     {
-        log(Warning) << "File " << _current_file.get() << " already exists." << endlog();
-        renameFile();
-        while(boost::filesystem::exists(_current_file.get()))
-        {
+        do {
             log(Warning) << "Timestamped file " << _current_file.get() << " already exists. Retrying in 1 second." << endlog();
             usleep(1*1000000);
-            renameFile();
-        }
+            timestampFile();
+        } while(boost::filesystem::exists(_current_file.get()));
         log(Warning) << "Writing log to " << _current_file.get() << " instead." << endlog();
         return true;
     }

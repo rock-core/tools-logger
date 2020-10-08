@@ -93,7 +93,6 @@ class TC_BasicBehaviour < Minitest::Test
     def test_auto_timestamp_file
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
-        touch_file = File.new(task.file, "w")
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
         generate_and_check_logfile
@@ -103,7 +102,6 @@ class TC_BasicBehaviour < Minitest::Test
     def test_re_stamping_existing_timestamped_file
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
-        touch_file = File.new(task.file, "w")
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
         task.configure
@@ -117,7 +115,6 @@ class TC_BasicBehaviour < Minitest::Test
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
         task.file = "/tmp/rock_logger_test"
-        touch_file = File.new(task.file, "w")
         assert(!task.has_port?('time'))
         assert(task.createLoggingPort('time', '/base/Time', []))
         generate_and_check_logfile
