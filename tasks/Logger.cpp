@@ -382,7 +382,8 @@ void Logger::timestampFile()
     // append suffix to previous _file.value()
     vector<string> strs;
     boost::split(strs, _file.value(), boost::is_any_of("."));
-    if ( strs.size() == 1) {
+    if ( strs.size() == 1)
+    {
         strs.insert(strs.end(), std::string(suffix));
     } else {
         strs.insert(strs.end()-1, std::string(suffix));
