@@ -83,6 +83,8 @@ namespace logger {
         /** Handle file naming/overwriting if output file already exists */
         bool handleExistingFile();
 
+        bool setFile(::std::string const & value);
+
     private:
         typedef RTT::DataFlowInterface::Ports Ports;
 

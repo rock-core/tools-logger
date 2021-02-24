@@ -417,3 +417,8 @@ bool Logger::handleExistingFile()
         return true;
     }
 }
+
+bool Logger::setFile(::std::string const & value)
+{
+    return(logger::LoggerBase::setFile(value));
+}
