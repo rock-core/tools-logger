@@ -216,4 +216,17 @@ class TC_BasicBehaviour < Minitest::Test
         stream = logfile.stream('source.file')
         assert_equal ["test", "bla.0.log"], stream.samples.to_a.map(&:last)
     end
+
+    def test_change_file
+        task.configure
+        task.start
+        task.file = "/tmp/new_file1.log"
+        assert_equal(task.current_file, "/tmp/new_file1.log")
+        task.overwrite_existing_files = false
+        task.auto_timestamp_files = true
+        task.file = "/tmp/new_file2.log"
+        assert(task.current_file != "/tmp/new_file2.log")
+        assert(task.current_file.start_with?("/tmp/new_file2."))
+        task.stop
+    end
 end
