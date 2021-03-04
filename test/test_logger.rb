@@ -221,12 +221,40 @@ class TC_BasicBehaviour < Minitest::Test
         task.configure
         task.start
         task.file = "/tmp/new_file1.log"
-        assert_equal(task.current_file, "/tmp/new_file1.log")
+        assert_equal("/tmp/new_file1.log", task.current_file)
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
         task.file = "/tmp/new_file2.log"
         assert(task.current_file != "/tmp/new_file2.log")
         assert(task.current_file.start_with?("/tmp/new_file2."))
         task.stop
+    end
+
+    def test_log_new_file
+        source = new_ruby_task_context 'source'
+        source.create_output_port 'out', '/int'
+        task.log(source.out)
+        task.configure
+        task.start
+        path1 = File.open(task.current_file).path
+
+        source.out.write 1
+        source.out.write 2
+        source.out.write 3
+        sleep 0.1
+
+        task.file = "/tmp/new_file.log"
+        path2 = File.open(task.current_file).path
+
+        source.out.write 4
+        source.out.write 5
+        source.out.write 6
+        sleep 0.1
+
+        task.stop
+        stream1 = Pocolog::Logfiles.open(path1).stream('source.out')
+        stream2 = Pocolog::Logfiles.open(path2).stream('source.out')
+        assert_equal [1, 2, 3], stream1.samples.to_a.map(&:last)
+        assert_equal [4, 5, 6], stream2.samples.to_a.map(&:last)
     end
 end
