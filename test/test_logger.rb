@@ -257,4 +257,19 @@ class TC_BasicBehaviour < Minitest::Test
         assert_equal [1, 2, 3], stream1.samples.to_a.map(&:last)
         assert_equal [4, 5, 6], stream2.samples.to_a.map(&:last)
     end
+
+    def test_keep_previous_file_when_error_occurs
+        task.configure
+        task.start
+        task.file = "/tmp/new_file1.log"
+        task.overwrite_existing_files = false
+        task.auto_timestamp_files = false
+        FileUtils.touch("/tmp/new_file2.log")
+        assert_raises Orocos::PropertyChangeRejected do
+            task.file = "/tmp/new_file2.log"
+        end
+        assert_equal "/tmp/new_file1.log", task.current_file
+        assert_equal "/tmp/new_file1.log", task.file
+        task.stop
+    end
 end
