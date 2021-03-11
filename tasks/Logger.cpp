@@ -356,7 +356,7 @@ void Logger::timestampFile(::std::string const& value)
     tm *t_ptr = localtime(&now);
     char suffix[21];
     strftime(suffix, sizeof(suffix), "%F_%H-%M-%S", t_ptr);
-    // append suffix to previous _file.value()
+    // append suffix to previous value
     vector<string> strs;
     boost::split(strs, value, boost::is_any_of("."));
     if ( strs.size() == 1)
@@ -471,6 +471,18 @@ bool Logger::setFile(::std::string const &value)
     }
     catch(const ofstream::failure& e){
         log(Error) << "Could not change task property _file: " << e.what() << endlog();
+        if (_current_file.get() != prevCurrentFile)
+        {
+            _current_file.set(prevCurrentFile);
+        }
+        return false;
+    }
+    catch(...){
+        log(Error) << "Could not change task property _file: unidentified error" << endlog();
+        if (_current_file.get() != prevCurrentFile)
+        {
+            _current_file.set(prevCurrentFile);
+        }
         return false;
     }
     return true;
