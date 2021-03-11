@@ -59,6 +59,9 @@ class TC_BasicBehaviour < Minitest::Test
         task.stop
         task.cleanup
 
+        temp_log_file = "/tmp/pocolog-test.log"
+        FileUtils.cp logfile_path, temp_log_file
+        @logfile = Pocolog::Logfiles.open(temp_log_file)
         stream = logfile.stream('time')
         samples = stream.samples.to_a.map(&:last)
         assert_equal(expected, samples)
