@@ -61,23 +61,16 @@ Logger::~Logger()
 
 bool Logger::startHook()
 {
-    if (!setCurrentFile(_file.value())){
+    std::string currentFile;
+
+    currentFile = computeCurrentFile(_file.value());
+    if (currentFile.empty()){
         return false;
     }
+    auto_ptr<ofstream> io(new ofstream(currentFile.c_str()));
+    _current_file.set(currentFile);
+    updateLoggers(io);
 
-    // The registry has been loaded on construction
-    // Now, create the output file
-    auto_ptr<ofstream> io(new ofstream(_current_file.get().c_str()));
-    auto_ptr<Logfile>  file(new Logfile(*io));
-
-    for (Reports::iterator it = root.begin(); it != root.end(); ++it)
-    {
-        it->logger = new Logging::StreamLogger(
-                it->name, it->type_name, it->cxx_type_name,*(it->registry), it->metadata, *file);
-    }
-
-    m_io   = io.release();
-    m_file = file.release();
     return true;
 }
 
@@ -349,7 +342,7 @@ void Logger::snapshot()
         this->engine()->getActivity()->trigger();
 }
 
-void Logger::timestampFile(::std::string const& value)
+std::string Logger::timestampFile(std::string const& file) const
 {
     // create timestamp
     time_t now = time(0);
@@ -358,7 +351,7 @@ void Logger::timestampFile(::std::string const& value)
     strftime(suffix, sizeof(suffix), "%F_%H-%M-%S", t_ptr);
     // append suffix to previous value
     vector<string> strs;
-    boost::split(strs, value, boost::is_any_of("."));
+    boost::split(strs, file, boost::is_any_of("."));
     if ( strs.size() == 1)
     {
         strs.insert(strs.end(), std::string(suffix));
@@ -366,123 +359,106 @@ void Logger::timestampFile(::std::string const& value)
         strs.insert(strs.end()-1, std::string(suffix));
     }
     std::string timestamped_str = boost::algorithm::join(strs, ".");
-    _current_file.set(timestamped_str);
+    return timestamped_str;
 }
 
-bool Logger::handleExistingFile(::std::string const& value)
+bool Logger::handleExistingFile(std::string const& file, std::string &currentFile) const
 {
     if (!_overwrite_existing_files.get() && !_auto_timestamp_files.get())
     {
-        log(Error) << "File " << _current_file.get() << " already exists. Neither overwrite nor auto-timestamp allowed by task properties." << endlog();
+        log(Error) << "File " << currentFile << " already exists. Neither overwrite nor auto-timestamp allowed by task properties." << endlog();
         return false;
     }
 
     if (_overwrite_existing_files.get() && !_auto_timestamp_files.get())
     {
-        log(Info) << "File " << _current_file.get() << " already exists. Overwriting existing file." << endlog();
+        log(Info) << "File " << currentFile << " already exists. Overwriting existing file." << endlog();
         return true;
     }
 
     if (!_overwrite_existing_files.get() && _auto_timestamp_files.get())
     {
         do {
-            log(Warning) << "Timestamped file " << _current_file.get() << " already exists. Retrying in 1 second." << endlog();
+            log(Warning) << "Timestamped file " << currentFile << " already exists. Retrying in 1 second." << endlog();
             usleep(1*1000000);
-            timestampFile(value);
-        } while(boost::filesystem::exists(_current_file.get()));
-        log(Warning) << "Writing log to " << _current_file.get() << " instead." << endlog();
+            currentFile = timestampFile(file);
+        } while(boost::filesystem::exists(currentFile));
+        log(Warning) << "Writing log to " << currentFile << " instead." << endlog();
         return true;
     }
 }
 
-bool Logger::setCurrentFile(::std::string const& value)
+std::string Logger::computeCurrentFile(std::string const& file) const
 {
-    if(value.empty())
+    std::string currentFile;
+
+    if(file.empty())
     {
       log(Error) << "Could not create log file. Task property _file is empty." << endlog();
-      return false;
+      return {};
     }
 
     if (_overwrite_existing_files.get() && _auto_timestamp_files.get())
     {
         log(Error) << "The properties overwrite_existing_files and auto_timestamp_files are both set to true, but are mutually exclusive." << endlog();
-        return false;
+        return {};
     }
 
-    _current_file.set(value);
+    currentFile = file;
 
-    if (_auto_timestamp_files.get()) { timestampFile(value); }
+    if (_auto_timestamp_files.get()) {
+        currentFile = timestampFile(file);
+    }
 
-    if (boost::filesystem::exists(_current_file.get()))
+    if (boost::filesystem::exists(currentFile))
     {
-        if (!handleExistingFile(value))
+        if (!handleExistingFile(file, currentFile))
         {
-            return false;
+            return {};
         }
     } else if (_auto_timestamp_files.get())
     {
-        log(Info) << "Successfully timestamped log file. Writing to: " << _current_file.get() << endlog();
+        log(Info) << "Successfully timestamped log file. Writing to: " << currentFile << endlog();
     }
-    return true;
+    return currentFile;
 }
 
-void Logger::updateLoggers()
+void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
 {
-    m_io->close();
+    if ((!_current_file.get().empty())&&(m_io != NULL)&&(m_io->is_open())){
+        m_io->close();
+    }
     // The registry has been loaded on construction
     // Now, create the output file
-    auto_ptr<ofstream> io(new ofstream(_current_file.get().c_str()));
-    auto_ptr<Logfile>  file(new Logfile(*io));
+    auto_ptr<Logfile> file(new Logfile(*io));
 
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
-        if (!it->logger){
-            it->logger = new Logging::StreamLogger(
-                    it->name, it->type_name, it->cxx_type_name,*(it->registry), it->metadata, *file);
-        }
-        else{
-            delete (it->logger);
-            it->logger = new Logging::StreamLogger(
-                    it->name, it->type_name, it->cxx_type_name,*(it->registry), it->metadata, *file);
-        }
+        delete (it->logger);
+        it->logger = new Logging::StreamLogger(
+                it->name, it->type_name, it->cxx_type_name,*(it->registry), it->metadata, *file);
     }
 
+    delete m_file;
+    delete m_io;
     m_io   = io.release();
     m_file = file.release();
 }
 
-bool Logger::setFile(::std::string const &value)
+bool Logger::setFile(std::string const &value)
 {
-    std::string prevCurrentFile = _current_file.get();
+    std::string currentFile = computeCurrentFile(value);
 
-    try {
-        if (!(_current_file.get().empty()) && (m_io->is_open()))
-        {
-            if (!setCurrentFile(value))
-            {
-                if (_current_file.get() != prevCurrentFile)
-                {
-                    _current_file.set(prevCurrentFile);
-                }
-                return false;
-            }
-            updateLoggers();
-        }
-    }
-    catch(const ofstream::failure& e){
-        log(Error) << "Could not change task property _file: " << e.what() << endlog();
-        if (_current_file.get() != prevCurrentFile)
-        {
-            _current_file.set(prevCurrentFile);
-        }
+    if(currentFile.empty()){
         return false;
     }
-    catch(...){
-        log(Error) << "Could not change task property _file: unidentified error" << endlog();
-        if (_current_file.get() != prevCurrentFile)
-        {
-            _current_file.set(prevCurrentFile);
-        }
+    try {
+        auto_ptr<ofstream> io(new ofstream(currentFile.c_str()));
+        updateLoggers(io);
+        _current_file.set(currentFile);
+    }
+    catch(const ofstream::failure& e){ 
+        log(Error) << "Could not change task property _file: " << e.what() << endlog();
         return false;
     }
     return true;
