@@ -95,7 +95,7 @@ namespace logger {
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<logger::StreamMetadata> const& metadata);
 
         void updateLoggers(std::auto_ptr<std::ofstream> &io);
-        std::string computeCurrentFile(std::string const& file) const;
+        bool computeCurrentFile(std::string const& file, std::string &currentFile) const;
 
         /**
          * Stores the 'datasource' of all reported items as properties.

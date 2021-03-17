@@ -65,8 +65,7 @@ bool Logger::startHook()
 {
     std::string currentFile;
 
-    currentFile = computeCurrentFile(_file.value());
-    if (currentFile.empty()){
+    if (!computeCurrentFile(_file.value(), currentFile)){
         return false;
     }
     auto_ptr<ofstream> io(new ofstream(currentFile.c_str()));
@@ -390,15 +389,13 @@ bool Logger::handleExistingFile(std::string const& file, std::string &currentFil
     }
 }
 
-std::string Logger::computeCurrentFile(std::string const& file) const
+bool Logger::computeCurrentFile(std::string const& file, std::string &currentFile) const
 {
-    std::string currentFile;
-
     if(file.empty())
     {
         log(Error) << "Could not create log file. Task property _file is empty."
                    << endlog();
-        return "";
+        return false;
     }
 
     if (_overwrite_existing_files.get() && _auto_timestamp_files.get())
@@ -406,7 +403,7 @@ std::string Logger::computeCurrentFile(std::string const& file) const
         log(Error) << "The properties overwrite_existing_files and "
                       "auto_timestamp_files are both set to true, "
                       "but are mutually exclusive." << endlog();
-        return "";
+        return false;
     }
 
     currentFile = file;
@@ -419,7 +416,7 @@ std::string Logger::computeCurrentFile(std::string const& file) const
     {
         if (!handleExistingFile(file, currentFile))
         {
-            return "";
+            return false;
         }
     }
     else if (_auto_timestamp_files.get())
@@ -427,8 +424,7 @@ std::string Logger::computeCurrentFile(std::string const& file) const
         log(Info) << "Successfully timestamped log file. "\
                      "Writing to: " << currentFile << endlog();
     }
-
-    return currentFile;
+    return true;
 }
 
 void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
@@ -455,9 +451,8 @@ void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
 
 bool Logger::setFile(std::string const &value)
 {
-    std::string currentFile = computeCurrentFile(value);
-
-    if(currentFile.empty()){
+    std::string currentFile;
+    if (!computeCurrentFile(value, currentFile)){
         return false;
     }
     try {
