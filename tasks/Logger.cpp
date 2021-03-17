@@ -128,7 +128,7 @@ bool Logger::createLoggingPort(const std::string& portname, const std::string& t
 	cerr << "cannot find " << typestr << " in the type info repository" << endl;
 	return false;
     }
-    
+
     RTT::base::PortInterface *pi = ports()->getPort(portname);
     if(pi) {
 	cerr << "port with name " << portname << " already exists" << endl;
@@ -188,10 +188,10 @@ bool Logger::reportPort(const std::string& component, const std::string& port ) 
         return false;
     }
 
-    
+
     std::string portname(component + "." + port);
     RTT::base::PortInterface *pi = ports()->getPort(portname);
-    
+
     if(pi) // we are already reporting this port
     {
         log(Info) << "port " << port << " of component " << component << " is already logged" << endlog();
@@ -232,7 +232,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
 
     ports()->addEventPort(reader->getName(), *reader);
 
-    // if there is a request to use the time field of a datatype 
+    // if there is a request to use the time field of a datatype
     // we need to look up the offset to that field in the registry
     std::string time_name;
     BOOST_FOREACH( const StreamMetadata& md_item, metadata )
@@ -240,7 +240,7 @@ bool Logger::addLoggingPort(RTT::base::InputPortInterface* reader, std::string c
 	if( md_item.key == "rock_timestamp_field" )
 	    time_name = md_item.value;
     }
-    
+
     int time_field_offset = -1;
     if( !time_name.empty() )
     {
@@ -396,14 +396,17 @@ std::string Logger::computeCurrentFile(std::string const& file) const
 
     if(file.empty())
     {
-      log(Error) << "Could not create log file. Task property _file is empty." << endlog();
-      return {};
+        log(Error) << "Could not create log file. Task property _file is empty."
+                   << endlog();
+        return "";
     }
 
     if (_overwrite_existing_files.get() && _auto_timestamp_files.get())
     {
-        log(Error) << "The properties overwrite_existing_files and auto_timestamp_files are both set to true, but are mutually exclusive." << endlog();
-        return {};
+        log(Error) << "The properties overwrite_existing_files and "
+                      "auto_timestamp_files are both set to true, "
+                      "but are mutually exclusive." << endlog();
+        return "";
     }
 
     currentFile = file;
@@ -416,12 +419,15 @@ std::string Logger::computeCurrentFile(std::string const& file) const
     {
         if (!handleExistingFile(file, currentFile))
         {
-            return {};
+            return "";
         }
-    } else if (_auto_timestamp_files.get())
-    {
-        log(Info) << "Successfully timestamped log file. Writing to: " << currentFile << endlog();
     }
+    else if (_auto_timestamp_files.get())
+    {
+        log(Info) << "Successfully timestamped log file. "\
+                     "Writing to: " << currentFile << endlog();
+    }
+
     return currentFile;
 }
 
@@ -442,9 +448,9 @@ void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
     }
 
     delete m_file;
+    m_file = file.release();
     delete m_io;
     m_io   = io.release();
-    m_file = file.release();
 }
 
 bool Logger::setFile(std::string const &value)
@@ -459,7 +465,7 @@ bool Logger::setFile(std::string const &value)
         updateLoggers(io);
         _current_file.set(currentFile);
     }
-    catch(const ofstream::failure& e){ 
+    catch(const ofstream::failure& e){
         log(Error) << "Could not change task property _file: " << e.what() << endlog();
         return false;
     }
