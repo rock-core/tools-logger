@@ -49,6 +49,8 @@ Logger::Logger(std::string const& name, TaskCore::TaskState initial_state)
     : LoggerBase(name, initial_state)
     , m_registry(0)
     , m_file(0)
+    , m_io(0)
+
 {
     m_registry = new Typelib::Registry;
 }
@@ -425,7 +427,7 @@ std::string Logger::computeCurrentFile(std::string const& file) const
 
 void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
 {
-    if ((!_current_file.get().empty())&&(m_io != NULL)&&(m_io->is_open())){
+    if (m_io && m_io->is_open()){
         m_io->close();
     }
     // The registry has been loaded on construction
