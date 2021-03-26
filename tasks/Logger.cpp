@@ -455,14 +455,17 @@ bool Logger::setFile(std::string const &value)
     if (!computeCurrentFile(value, currentFile)){
         return false;
     }
+
+    auto_ptr<ofstream> io;
     try {
-        auto_ptr<ofstream> io(new ofstream(currentFile.c_str()));
-        updateLoggers(io);
-        _current_file.set(currentFile);
+        io.reset(new ofstream(currentFile.c_str()));
     }
     catch(const ofstream::failure& e){
         log(Error) << "Could not change task property _file: " << e.what() << endlog();
         return false;
     }
+    
+    _current_file.set(currentFile);
+    updateLoggers(io);
     return true;
 }
