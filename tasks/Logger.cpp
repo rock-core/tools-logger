@@ -464,7 +464,7 @@ bool Logger::setFile(std::string const &value)
         log(Error) << "Could not change task property _file: " << e.what() << endlog();
         return false;
     }
-    
+
     _current_file.set(currentFile);
     updateLoggers(io);
     return true;
