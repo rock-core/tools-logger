@@ -63,16 +63,11 @@ Logger::~Logger()
 
 bool Logger::startHook()
 {
-    std::string currentFile;
-
-    if (!computeCurrentFile(_file.value(), currentFile)){
+    if (! LoggerBase::startHook()) {
         return false;
     }
-    auto_ptr<ofstream> io(new ofstream(currentFile.c_str()));
-    _current_file.set(currentFile);
-    updateLoggers(io);
-
-    return true;
+    
+    return setFile(_file);
 }
 
 void Logger::updateHook()
