@@ -78,10 +78,12 @@ namespace logger {
 
         /** Timestamp output file for automatic renaming capability
          *  Sets _current_file attribute */
-        void timestampFile();
+        std::string timestampFile(std::string const& file) const;
         
         /** Handle file naming/overwriting if output file already exists */
-        bool handleExistingFile();
+        bool handleExistingFile(std::string const& file, std::string &currentFile) const;
+
+        bool setFile(std::string const& value);
 
     private:
         typedef RTT::DataFlowInterface::Ports Ports;
@@ -91,6 +93,9 @@ namespace logger {
 
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name);
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<logger::StreamMetadata> const& metadata);
+
+        void updateLoggers(std::auto_ptr<std::ofstream> &io);
+        bool computeCurrentFile(std::string const& file, std::string &currentFile) const;
 
         /**
          * Stores the 'datasource' of all reported items as properties.

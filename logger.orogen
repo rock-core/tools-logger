@@ -42,6 +42,7 @@ task_context "Logger" do
         doc("removes all logging ports")
 
     property("file", "std/string").
+        dynamic.
         doc "the output file name"
 
     # Controls whether the logger should overwrite or timestamp an existing file, if it already exists.

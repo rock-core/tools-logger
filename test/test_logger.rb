@@ -1,12 +1,14 @@
-require 'minitest/autorun'
-require 'orocos/test/component'
+# frozen_string_literal: true
 
-require 'pocolog'
-require 'fileutils'
+require "minitest/autorun"
+require "orocos/test/component"
+
+require "pocolog"
+require "fileutils"
 
 class TC_BasicBehaviour < Minitest::Test
     include Orocos::Test::Component
-    start 'logger', 'rock_logger'
+    start "logger", "rock_logger"
 
     def task
         logger
@@ -22,12 +24,8 @@ class TC_BasicBehaviour < Minitest::Test
     def teardown
         path = task.current_file
         super
-        if !path.empty?
-            FileUtils.rm_f(path.gsub(/\.idx$/, ".log"))
-        end
-        if @logfile_io
-            @logfile_io.close
-        end
+        FileUtils.rm_f(path.gsub(/\.idx$/, ".log")) unless path.empty?
+        @logfile_io&.close
     end
 
     def logfile_path
@@ -40,14 +38,14 @@ class TC_BasicBehaviour < Minitest::Test
     end
 
     def generate_and_check_logfile
-        assert(task.has_port?('time'))
+        assert(task.has_port?("time"))
 
         task.configure
         task.start
         # create file for logging
         logfile_path
 
-        writer = task.time.writer(:type => :buffer, :size => 2000)
+        writer = task.time.writer(type: :buffer, size: 2000)
         expected = []
         10.times do |i|
             expected << Time.at(i)
@@ -62,15 +60,15 @@ class TC_BasicBehaviour < Minitest::Test
         temp_log_file = "/tmp/pocolog-test.log"
         FileUtils.cp logfile_path, temp_log_file
         @logfile = Pocolog::Logfiles.open(temp_log_file)
-        stream = logfile.stream('time')
+        stream = logfile.stream("time")
         samples = stream.samples.to_a.map(&:last)
         assert_equal(expected, samples)
         stream
     end
 
     def test_basics
-        assert(!task.has_port?('time'))
-        assert(task.createLoggingPort('time', '/base/Time', []))
+        assert(!task.has_port?("time"))
+        assert(task.createLoggingPort("time", "/base/Time", []))
         generate_and_check_logfile
     end
 
@@ -96,8 +94,8 @@ class TC_BasicBehaviour < Minitest::Test
     def test_auto_timestamp_file
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
-        assert(!task.has_port?('time'))
-        assert(task.createLoggingPort('time', '/base/Time', []))
+        assert(!task.has_port?("time"))
+        assert(task.createLoggingPort("time", "/base/Time", []))
         generate_and_check_logfile
         assert(task.file != task.current_file)
     end
@@ -105,8 +103,8 @@ class TC_BasicBehaviour < Minitest::Test
     def test_re_stamping_existing_timestamped_file
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
-        assert(!task.has_port?('time'))
-        assert(task.createLoggingPort('time', '/base/Time', []))
+        assert(!task.has_port?("time"))
+        assert(task.createLoggingPort("time", "/base/Time", []))
         task.configure
         task.start
         task.stop
@@ -118,27 +116,32 @@ class TC_BasicBehaviour < Minitest::Test
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
         task.file = "/tmp/rock_logger_test"
-        assert(!task.has_port?('time'))
-        assert(task.createLoggingPort('time', '/base/Time', []))
+        assert(!task.has_port?("time"))
+        assert(task.createLoggingPort("time", "/base/Time", []))
         generate_and_check_logfile
-        assert(task.file == task.current_file.split('.')[0])
+        assert(task.file == task.current_file.split(".")[0])
     end
 
     def test_metadata
-        assert(!task.has_port?('time'))
+        assert(!task.has_port?("time"))
         meta = []
-        meta << Hash['key' => 'key0', 'value' => 'value0']
-        meta << Hash['key' => 'key1', 'value' => 'value1']
-        assert(task.createLoggingPort('time', '/base/Time', meta))
+        meta << Hash["key" => "key0", "value" => "value0"]
+        meta << Hash["key" => "key1", "value" => "value1"]
+        assert(task.createLoggingPort("time", "/base/Time", meta))
         stream = generate_and_check_logfile
-        assert_equal({'key0' => 'value0', 'key1' => 'value1', 'rock_cxx_type_name' => '/base/Time'}, stream.metadata)
+        assert_equal(
+            { "key0" => "value0",
+              "key1" => "value1",
+              "rock_cxx_type_name" => "/base/Time" },
+            stream.metadata
+        )
     end
 
     def test_create_port_log
-        source = new_ruby_task_context 'source'
-        source.create_output_port 'out', '/int32_t'
+        source = new_ruby_task_context "source"
+        source.create_output_port "out", "/int32_t"
         task.log(source.out)
-        assert(task.has_port?('source.out'))
+        assert(task.has_port?("source.out"))
         task.configure
         task.start
         # create file for logging
@@ -146,22 +149,22 @@ class TC_BasicBehaviour < Minitest::Test
 
         task.stop
 
-        stream = logfile.stream('source.out')
+        stream = logfile.stream("source.out")
         expected_metadata = {
-            'rock_stream_type' => 'port',
-            'rock_task_model' => nil,
-            'rock_task_name' => 'source',
-            'rock_task_object_name' => 'out',
-            'rock_orocos_type_name' => '/int32_t',
-            'rock_cxx_type_name' => '/int32_t'
+            "rock_stream_type" => "port",
+            "rock_task_model" => nil,
+            "rock_task_name" => "source",
+            "rock_task_object_name" => "out",
+            "rock_orocos_type_name" => "/int32_t",
+            "rock_cxx_type_name" => "/int32_t"
         }
         assert_equal expected_metadata, stream.metadata
     end
 
     def test_log_port
         # Create a ruby task as source
-        source = new_ruby_task_context 'source'
-        source.create_output_port 'out', '/int'
+        source = new_ruby_task_context "source"
+        source.create_output_port "out", "/int"
         task.log(source.out)
         task.configure
         task.start
@@ -173,37 +176,37 @@ class TC_BasicBehaviour < Minitest::Test
         sleep 0.1
 
         task.stop
-        stream = logfile.stream('source.out')
+        stream = logfile.stream("source.out")
         assert_equal [1, 2, 3], stream.samples.to_a.map(&:last)
     end
 
     def test_create_property_log
-        source = new_ruby_task_context 'source'
-        source.create_property 'file', '/std/string'
-        task.create_log(source.property('file'))
-        assert(task.has_port?('source.file'))
+        source = new_ruby_task_context "source"
+        source.create_property "file", "/std/string"
+        task.create_log(source.property("file"))
+        assert(task.has_port?("source.file"))
         task.configure
         task.start
         logfile_path
         task.stop
 
-        stream = logfile.stream('source.file')
+        stream = logfile.stream("source.file")
         expected_metadata = {
-            'rock_stream_type' => 'property',
-            'rock_task_model' => nil,
-            'rock_task_name' => 'source',
-            'rock_task_object_name' => 'file',
-            'rock_orocos_type_name' => '/std/string',
-            'rock_cxx_type_name' => '/std/string'
+            "rock_stream_type" => "property",
+            "rock_task_model" => nil,
+            "rock_task_name" => "source",
+            "rock_task_object_name" => "file",
+            "rock_orocos_type_name" => "/std/string",
+            "rock_cxx_type_name" => "/std/string"
         }
         assert_equal expected_metadata, stream.metadata
     end
 
     def test_log_property
-        source = new_ruby_task_context 'source'
-        source.create_property 'file', '/std/string'
+        source = new_ruby_task_context "source"
+        source.create_property "file", "/std/string"
         source.file = "test"
-        task.log(source.property('file'))
+        task.log(source.property("file"))
         task.configure
         task.start
         logfile_path
@@ -213,7 +216,63 @@ class TC_BasicBehaviour < Minitest::Test
 
         task.stop
 
-        stream = logfile.stream('source.file')
+        stream = logfile.stream("source.file")
         assert_equal ["test", "bla.0.log"], stream.samples.to_a.map(&:last)
+    end
+
+    def test_change_file
+        task.configure
+        task.start
+        task.file = "/tmp/new_file1.log"
+        assert_equal("/tmp/new_file1.log", task.current_file)
+        task.overwrite_existing_files = false
+        task.auto_timestamp_files = true
+        task.file = "/tmp/new_file2.log"
+        assert(task.current_file != "/tmp/new_file2.log")
+        assert(task.current_file.start_with?("/tmp/new_file2."))
+        task.stop
+    end
+
+    def test_log_new_file
+        source = new_ruby_task_context "source"
+        source.create_output_port "out", "/int"
+        task.log(source.out)
+        task.configure
+        task.start
+        path1 = File.open(task.current_file).path
+
+        source.out.write 1
+        source.out.write 2
+        source.out.write 3
+        sleep 0.1
+
+        task.file = "/tmp/new_file.log"
+        path2 = File.open(task.current_file).path
+
+        source.out.write 4
+        source.out.write 5
+        source.out.write 6
+        sleep 0.1
+
+        task.stop
+        stream1 = Pocolog::Logfiles.open(path1).stream("source.out")
+        stream2 = Pocolog::Logfiles.open(path2).stream("source.out")
+        assert_equal [1, 2, 3], stream1.samples.to_a.map(&:last)
+        assert_equal [4, 5, 6], stream2.samples.to_a.map(&:last)
+    end
+
+    def test_keep_previous_file_when_error_occurs
+        task.configure
+        task.start
+        task.file = "/tmp/new_file1.log"
+        task.overwrite_existing_files = false
+        task.auto_timestamp_files = false
+        FileUtils.touch("/tmp/new_file2.log")
+        assert_raises Orocos::PropertyChangeRejected do
+            task.file = "/tmp/new_file2.log"
+        end
+        assert_equal "/tmp/new_file1.log", task.current_file
+        assert_equal "/tmp/new_file1.log", task.file
+        task.stop
     end
 end
