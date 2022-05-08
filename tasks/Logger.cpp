@@ -425,14 +425,22 @@ bool Logger::computeCurrentFile(std::string const& file, std::string &currentFil
     return true;
 }
 
+#if __cplusplus >= 201103L
+void Logger::updateLoggers(std::unique_ptr<std::ofstream> &io)
+#else
 void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
+#endif
 {
     if (m_io && m_io->is_open()){
         m_io->close();
     }
     // The registry has been loaded on construction
     // Now, create the output file
+#if __cplusplus >= 201103L
+    unique_ptr<Logfile> file(new Logfile(*io));
+#else
     auto_ptr<Logfile> file(new Logfile(*io));
+#endif
 
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
@@ -462,7 +470,11 @@ bool Logger::openLogfile(std::string const& value) {
         return false;
     }
 
+#if __cplusplus >= 201103L
+    unique_ptr<ofstream> io;
+#else
     auto_ptr<ofstream> io;
+#endif
     try {
         io.reset(new ofstream(currentFile.c_str()));
     }

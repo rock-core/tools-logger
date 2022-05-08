@@ -28,9 +28,9 @@ namespace logger {
     protected:
 
         Typelib::Registry* m_registry;
-        std::ofstream*     m_io;
         Logging::Logfile*  m_file;
-    
+        std::ofstream*     m_io;
+
         bool startHook();
         void updateHook();
         void stopHook();
@@ -49,7 +49,7 @@ namespace logger {
          * Report all the data ports of a component.
          */
         bool reportComponent( const std::string& component );
-            
+
         /**
          * Unreport the data ports of a component.
          */
@@ -79,7 +79,7 @@ namespace logger {
         /** Timestamp output file for automatic renaming capability
          *  Sets _current_file attribute */
         std::string timestampFile(std::string const& file) const;
-        
+
         /** Handle file naming/overwriting if output file already exists */
         bool handleExistingFile(std::string const& file, std::string &currentFile) const;
 
@@ -98,7 +98,11 @@ namespace logger {
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name);
         bool addLoggingPort(RTT::base::InputPortInterface* reader, std::string const& stream_name, std::vector<logger::StreamMetadata> const& metadata);
 
+#if __cplusplus >= 201103L
+        void updateLoggers(std::unique_ptr<std::ofstream> &io);
+#else
         void updateLoggers(std::auto_ptr<std::ofstream> &io);
+#endif
         bool computeCurrentFile(std::string const& file, std::string &currentFile) const;
 
         /**
