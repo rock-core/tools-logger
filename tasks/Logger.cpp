@@ -382,6 +382,9 @@ bool Logger::handleExistingFile(std::string const& file, std::string &currentFil
         log(Warning) << "Writing log to " << currentFile << " instead." << endlog();
         return true;
     }
+
+    log(Error) << "Invalid configuration overwrite_existing_files == true and auto_timestamp == true" << endlog();
+    return false;
 }
 
 bool Logger::computeCurrentFile(std::string const& file, std::string &currentFile) const
