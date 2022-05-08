@@ -5,6 +5,7 @@ require "orocos/test/component"
 
 require "pocolog"
 require "fileutils"
+require "time"
 
 class TC_BasicBehaviour < Minitest::Test
     include Orocos::Test::Component
@@ -16,16 +17,25 @@ class TC_BasicBehaviour < Minitest::Test
 
     def setup
         super
+
+        @tempdir = Dir.mktmpdir
+        @tempfiles = []
+
         task.overwrite_existing_files = true
         task.auto_timestamp_files = false
-        task.file = "/tmp/rock_logger_test.log"
+        task.file = make_tmppath
     end
 
     def teardown
-        path = task.current_file
         super
-        FileUtils.rm_f(path.gsub(/\.idx$/, ".log")) unless path.empty?
+
+        FileUtils.rm_rf @tempdir
         @logfile_io&.close
+    end
+
+    def make_tmppath(suffix: ".log")
+        @tempfiles << File.join(@tempdir, "#{@tempfiles.size}#{suffix}")
+        @tempfiles.last
     end
 
     def logfile_path
@@ -57,7 +67,7 @@ class TC_BasicBehaviour < Minitest::Test
         task.stop
         task.cleanup
 
-        temp_log_file = "/tmp/pocolog-test.log"
+        temp_log_file = make_tmppath
         FileUtils.cp logfile_path, temp_log_file
         @logfile = Pocolog::Logfiles.open(temp_log_file)
         stream = logfile.stream("time")
@@ -85,7 +95,7 @@ class TC_BasicBehaviour < Minitest::Test
         task.overwrite_existing_files = false
         task.auto_timestamp_files = false
         task.configure
-        touch_file = File.new(task.file, "w")
+        FileUtils.touch task.file
         assert_raises Orocos::StateTransitionFailed do
             task.start
         end
@@ -115,7 +125,7 @@ class TC_BasicBehaviour < Minitest::Test
     def test_no_suffix_log_file
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
-        task.file = "/tmp/rock_logger_test"
+        task.file = make_tmppath(suffix: "")
         assert(!task.has_port?("time"))
         assert(task.createLoggingPort("time", "/base/Time", []))
         generate_and_check_logfile
@@ -220,16 +230,66 @@ class TC_BasicBehaviour < Minitest::Test
         assert_equal ["test", "bla.0.log"], stream.samples.to_a.map(&:last)
     end
 
-    def test_change_file
+    def test_it_can_configure_and_start_in_no_overwrite_mode
+        task.overwrite_existing_files = false
         task.configure
         task.start
-        task.file = "/tmp/new_file1.log"
-        assert_equal("/tmp/new_file1.log", task.current_file)
+        task.stop
+    end
+
+    def test_it_does_not_create_the_file_before_it_gets_started
+        refute File.file?(task.file)
+        task.configure
+        refute File.file?(task.file)
+        task.file = task.file
+        refute File.file?(task.file)
+        task.start
+        assert File.file?(task.file)
+    end
+
+    def test_it_supports_the_file_property_being_set_between_configure_and_start_with_overwriting_false
+        task.overwrite_existing_files = false
+        task.configure
+        task.file = task.file
+        task.start
+    end
+
+    def test_change_file_auto_timestamp
         task.overwrite_existing_files = false
         task.auto_timestamp_files = true
-        task.file = "/tmp/new_file2.log"
-        assert(task.current_file != "/tmp/new_file2.log")
-        assert(task.current_file.start_with?("/tmp/new_file2."))
+
+        base_path = make_tmppath(suffix: "")
+        task.file = base_path
+
+        task.configure
+        task.start
+        initial_current_file = task.current_file
+        assert initial_current_file.start_with?(base_path)
+        initial_timestamp = initial_current_file.split(".")[1]
+
+        task.file = base_path
+        refute_equal initial_current_file, task.current_file
+        assert task.current_file.start_with?(base_path)
+        final_timestamp = task.current_file.split(".")[1]
+        task.stop
+
+        # NOTE: the way the timestamps are generated allows for string comparison
+        assert initial_timestamp < final_timestamp
+    end
+
+    def test_change_file_plain
+        task.overwrite_existing_files = false
+        task.auto_timestamp_files = false
+
+        task.configure
+        task.start
+        initial_path = make_tmppath
+        task.file = initial_path
+        assert_equal initial_path, task.current_file
+
+        new_path = make_tmppath
+        task.file = new_path
+        assert_equal new_path, task.current_file
         task.stop
     end
 
@@ -246,7 +306,7 @@ class TC_BasicBehaviour < Minitest::Test
         source.out.write 3
         sleep 0.1
 
-        task.file = "/tmp/new_file.log"
+        task.file = make_tmppath
         path2 = File.open(task.current_file).path
 
         source.out.write 4
@@ -264,15 +324,18 @@ class TC_BasicBehaviour < Minitest::Test
     def test_keep_previous_file_when_error_occurs
         task.configure
         task.start
-        task.file = "/tmp/new_file1.log"
+        logfile_path = task.current_file
+
         task.overwrite_existing_files = false
         task.auto_timestamp_files = false
-        FileUtils.touch("/tmp/new_file2.log")
+
+        file_path = make_tmppath
+        FileUtils.touch file_path
         assert_raises Orocos::PropertyChangeRejected do
-            task.file = "/tmp/new_file2.log"
+            task.file = file_path
         end
-        assert_equal "/tmp/new_file1.log", task.current_file
-        assert_equal "/tmp/new_file1.log", task.file
+        assert_equal logfile_path, task.current_file
+        assert_equal logfile_path, task.file
         task.stop
     end
 end

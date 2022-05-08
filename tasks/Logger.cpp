@@ -66,8 +66,8 @@ bool Logger::startHook()
     if (! LoggerBase::startHook()) {
         return false;
     }
-    
-    return setFile(_file);
+
+    return openLogfile(_file);
 }
 
 void Logger::updateHook()
@@ -446,6 +446,14 @@ void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
 
 bool Logger::setFile(std::string const &value)
 {
+    if (state() != RUNNING) {
+        return true;
+    }
+
+    return openLogfile(value);
+}
+
+bool Logger::openLogfile(std::string const& value) {
     std::string currentFile;
     if (!computeCurrentFile(value, currentFile)){
         return false;
