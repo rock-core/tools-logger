@@ -66,8 +66,8 @@ bool Logger::startHook()
     if (! LoggerBase::startHook()) {
         return false;
     }
-    
-    return setFile(_file);
+
+    return openLogfile(_file);
 }
 
 void Logger::updateHook()
@@ -382,6 +382,9 @@ bool Logger::handleExistingFile(std::string const& file, std::string &currentFil
         log(Warning) << "Writing log to " << currentFile << " instead." << endlog();
         return true;
     }
+
+    log(Error) << "Invalid configuration overwrite_existing_files == true and auto_timestamp == true" << endlog();
+    return false;
 }
 
 bool Logger::computeCurrentFile(std::string const& file, std::string &currentFile) const
@@ -422,14 +425,22 @@ bool Logger::computeCurrentFile(std::string const& file, std::string &currentFil
     return true;
 }
 
+#if __cplusplus >= 201103L
+void Logger::updateLoggers(std::unique_ptr<std::ofstream> &io)
+#else
 void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
+#endif
 {
     if (m_io && m_io->is_open()){
         m_io->close();
     }
     // The registry has been loaded on construction
     // Now, create the output file
+#if __cplusplus >= 201103L
+    unique_ptr<Logfile> file(new Logfile(*io));
+#else
     auto_ptr<Logfile> file(new Logfile(*io));
+#endif
 
     for (Reports::iterator it = root.begin(); it != root.end(); ++it)
     {
@@ -446,12 +457,24 @@ void Logger::updateLoggers(std::auto_ptr<std::ofstream> &io)
 
 bool Logger::setFile(std::string const &value)
 {
+    if (state() != RUNNING) {
+        return true;
+    }
+
+    return openLogfile(value);
+}
+
+bool Logger::openLogfile(std::string const& value) {
     std::string currentFile;
     if (!computeCurrentFile(value, currentFile)){
         return false;
     }
 
+#if __cplusplus >= 201103L
+    unique_ptr<ofstream> io;
+#else
     auto_ptr<ofstream> io;
+#endif
     try {
         io.reset(new ofstream(currentFile.c_str()));
     }
