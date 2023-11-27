@@ -58,6 +58,10 @@ Logger::Logger(std::string const& name, TaskCore::TaskState initial_state)
 Logger::~Logger()
 {
     clear();
+    if(m_io)
+        m_io->flush();
+    delete m_file;
+    delete m_io;
     delete m_registry;
 }
 
