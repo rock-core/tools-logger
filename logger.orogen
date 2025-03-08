@@ -50,6 +50,7 @@ task_context "Logger" do
     # The flags are mutually exclusive, therefore the task will fail if both are true.
     property 'overwrite_existing_files', '/bool', false
     property 'auto_timestamp_files'    , '/bool', false
+    property 'flush_period', '/base/Time'
     attribute 'current_file', 'std/string'
 end
 

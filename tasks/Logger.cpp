@@ -52,6 +52,7 @@ Logger::Logger(std::string const& name, TaskCore::TaskState initial_state)
     , m_io(0)
 
 {
+    _flush_period.set(base::Time::fromSeconds(10));
     m_registry = new Typelib::Registry;
 }
 
@@ -71,6 +72,7 @@ bool Logger::startHook()
         return false;
     }
 
+    m_last_flush = base::Time::now();
     return openLogfile(_file);
 }
 
@@ -99,6 +101,12 @@ void Logger::updateHook()
             it->logger->writeSampleHeader(stamp, payload_size);
             it->typelib_marshaller->marshal(it->logger->getStream(), it->marshalling_handle);
         }
+    }
+
+    base::Time now = base::Time::now();
+    if (now - m_last_flush > _flush_period.get()) {
+        m_io->flush();
+        m_last_flush = now;
     }
 }
 
