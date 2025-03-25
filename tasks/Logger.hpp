@@ -30,6 +30,7 @@ namespace logger {
         Typelib::Registry* m_registry;
         Logging::Logfile*  m_file;
         std::ofstream*     m_io;
+        base::Time         m_last_flush;
 
         bool startHook();
         void updateHook();
